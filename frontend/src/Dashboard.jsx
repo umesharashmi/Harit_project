@@ -2,6 +2,19 @@ import { useEffect, useState } from "react";
 import { getFilters, getAvg, getRange } from "./api";
 import "./styles.css";
 
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer
+} from "recharts";
+
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+
 export default function Dashboard() {
 
   const [filters, setFilters] = useState({
@@ -23,6 +36,7 @@ export default function Dashboard() {
   const [mode, setMode] = useState("single");
   const [avg, setAvg] = useState(null);
   const [results, setResults] = useState([]);
+  const [chartData, setChartData] = useState([]);
 
   // LOAD FILTERS
   useEffect(() => {
@@ -38,15 +52,14 @@ export default function Dashboard() {
       .catch(err => console.log(err));
   }, []);
 
-  //  FILTER ITEMS
+  // FILTER ITEMS
   const filteredItems = filters.items.filter(
     (i) => i.category === form.category
   );
 
-  //  FILTER DATES (basic - can upgrade backend later)
   const filteredDates = filters.dates;
 
-  //  SINGLE SEARCH
+  // SINGLE SEARCH
   const search = async () => {
     if (!form.date || !form.item || !form.category || !form.city) {
       alert("Fill all fields");
@@ -71,6 +84,8 @@ export default function Dashboard() {
       city: form.city,
       average: value
     }]);
+
+    setChartData([]);
   };
 
   // RANGE SEARCH
@@ -91,6 +106,7 @@ export default function Dashboard() {
     const value = res.data.average ?? 0;
 
     setAvg(value);
+
     setResults([{
       type: "Range",
       date: `${form.start} → ${form.end}`,
@@ -99,13 +115,55 @@ export default function Dashboard() {
       city: form.city,
       average: value
     }]);
+
+    const rawData = res.data.daily || res.data.data || [];
+
+    const formattedData = rawData.map(d => ({
+      date: d.date ? d.date : d.day,
+      average: d.average !== undefined ? d.average : d.avg
+    }));
+
+    setChartData(formattedData);
+  };
+
+  // ✅ EXPORT TO EXCEL (FIXED)
+  const exportToExcel = () => {
+    if (chartData.length === 0) {
+      alert("No data to export");
+      return;
+    }
+
+    const exportData = chartData.map(d => ({
+      date: d.date,
+      average: d.average,
+      item: form.item,
+      category: form.category,
+      city: form.city
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Prices");
+
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array"
+    });
+
+    const file = new Blob([excelBuffer], {
+      type:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    });
+
+    saveAs(file, "price_data.xlsx");
   };
 
   return (
     <div className="container">
 
-      <h1 className="title"> Price Dashboard For Date Or Date Range</h1>
-<hr></hr>
+      <h1 className="title">Price Dashboard</h1>
+      <hr />
+
       {/* MODE */}
       <div className="mode-buttons">
         <button
@@ -122,7 +180,9 @@ export default function Dashboard() {
           Date Range
         </button>
       </div>
-<hr></hr>
+
+      <hr />
+
       {/* FILTERS */}
       <div className="card">
 
@@ -163,7 +223,7 @@ export default function Dashboard() {
 
       </div>
 
-      {/* SINGLE DATE */}
+      {/* SINGLE */}
       {mode === "single" && (
         <div className="card">
 
@@ -218,10 +278,31 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* RESULT */}
+      {/* AVG */}
       {avg !== null && (
         <div className="avg-card">
           💰 Average Price: {Number(avg).toFixed(2)}
+        </div>
+      )}
+
+      {/* CHART */}
+      {chartData.length > 0 && (
+        <div className="card">
+          <h3>📊 Price Trend</h3>
+
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Line type="monotone" dataKey="average" />
+            </LineChart>
+          </ResponsiveContainer>
+
+          <button className="search-btn" onClick={exportToExcel}>
+            ⬇ Export to Excel
+          </button>
         </div>
       )}
 

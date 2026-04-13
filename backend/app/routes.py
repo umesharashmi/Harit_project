@@ -162,32 +162,53 @@ def avg_range(start: str, end: str, item: str = None, category: str = None, city
     db = SessionLocal()
 
     try:
-        # 🔥 convert dash → dot
+        # convert dash → dot
         start = start.replace("-", ".")
         end = end.replace("-", ".")
 
-        # 🔥 swap if wrong
+        # swap if wrong
         if start > end:
             start, end = end, start
 
+        # 🔥 OVERALL AVERAGE
         query = db.query(func.avg((Price.min_price + Price.max_price) / 2))
-
         query = query.filter(Price.date >= start, Price.date <= end)
 
         if item:
             query = query.filter(Price.item == item)
-
         if category:
             query = query.filter(Price.category == category)
-
         if city:
             query = query.filter(Price.city == city)
 
         avg = query.scalar()
 
-        print("DEBUG RANGE:", start, end, item, category, city, avg)
+        # 🔥 DAILY DATA (THIS WAS MISSING ❗)
+        data_query = db.query(
+            Price.date,
+            func.avg((Price.min_price + Price.max_price) / 2).label("average")
+        ).filter(
+            Price.date >= start,
+            Price.date <= end
+        )
 
-        return {"average": float(avg) if avg else 0}
+        if item:
+            data_query = data_query.filter(Price.item == item)
+        if category:
+            data_query = data_query.filter(Price.category == category)
+        if city:
+            data_query = data_query.filter(Price.city == city)
+
+        data = data_query.group_by(Price.date).all()
+
+        # 🔥 FINAL RETURN
+        return {
+            "average": float(avg) if avg else 0,
+            "daily": [
+                {"date": d[0], "average": float(d[1])}
+                for d in data
+            ]
+        }
 
     finally:
         db.close()
