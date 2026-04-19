@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getFilters, getAvg, getRange } from "./api";
+import { getFilters, getAvg, getRange } from "./api/api";
 import "./styles.css";
 
 import {
@@ -15,7 +15,21 @@ import {
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
-export default function Dashboard() {
+export default function Dashboard({ hideDownload = false }) {
+
+  // ✅ CHECK LOGIN + ROLE
+  const role = localStorage.getItem("role");
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Please login first");
+      window.location.href = "/";
+    }
+  }, []);
+
+  const canDownload = role === "admin";
 
   const [filters, setFilters] = useState({
     dates: [],
@@ -38,7 +52,7 @@ export default function Dashboard() {
   const [results, setResults] = useState([]);
   const [chartData, setChartData] = useState([]);
 
-  // LOAD FILTERS
+  // ✅ LOAD FILTERS (WITH ERROR HANDLE)
   useEffect(() => {
     getFilters()
       .then(res => {
@@ -49,7 +63,10 @@ export default function Dashboard() {
           cities: res.data.cities || []
         });
       })
-      .catch(err => console.log(err));
+      .catch(err => {
+        console.log(err);
+        alert("Error loading filters");
+      });
   }, []);
 
   // FILTER ITEMS
@@ -59,75 +76,90 @@ export default function Dashboard() {
 
   const filteredDates = filters.dates;
 
-  // SINGLE SEARCH
+  // ✅ SINGLE SEARCH
   const search = async () => {
     if (!form.date || !form.item || !form.category || !form.city) {
       alert("Fill all fields");
       return;
     }
 
-    const res = await getAvg({
-      date: form.date,
-      item: form.item,
-      category: form.category,
-      city: form.city
-    });
+    try {
+      const res = await getAvg({
+        date: form.date,
+        item: form.item,
+        category: form.category,
+        city: form.city
+      });
 
-    const value = res.data.average ?? 0;
+      const value = res.data.average ?? 0;
 
-    setAvg(value);
-    setResults([{
-      type: "Single",
-      date: form.date,
-      item: form.item,
-      category: form.category,
-      city: form.city,
-      average: value
-    }]);
+      setAvg(value);
+      setResults([{
+        type: "Single",
+        date: form.date,
+        item: form.item,
+        category: form.category,
+        city: form.city,
+        average: value
+      }]);
 
-    setChartData([]);
+      setChartData([]);
+
+    } catch (err) {
+      alert("Error fetching data");
+    }
   };
 
-  // RANGE SEARCH
+  // ✅ RANGE SEARCH
   const rangeSearch = async () => {
     if (!form.start || !form.end || !form.item || !form.category || !form.city) {
       alert("Fill all fields");
       return;
     }
 
-    const res = await getRange({
-      start: form.start,
-      end: form.end,
-      item: form.item,
-      category: form.category,
-      city: form.city
-    });
+    try {
+      const res = await getRange({
+        start: form.start,
+        end: form.end,
+        item: form.item,
+        category: form.category,
+        city: form.city
+      });
 
-    const value = res.data.average ?? 0;
+      const value = res.data.average ?? 0;
 
-    setAvg(value);
+      setAvg(value);
 
-    setResults([{
-      type: "Range",
-      date: `${form.start} → ${form.end}`,
-      item: form.item,
-      category: form.category,
-      city: form.city,
-      average: value
-    }]);
+      setResults([{
+        type: "Range",
+        date: `${form.start} → ${form.end}`,
+        item: form.item,
+        category: form.category,
+        city: form.city,
+        average: value
+      }]);
 
-    const rawData = res.data.daily || res.data.data || [];
+      const rawData = res.data.daily || res.data.data || [];
 
-    const formattedData = rawData.map(d => ({
-      date: d.date ? d.date : d.day,
-      average: d.average !== undefined ? d.average : d.avg
-    }));
+      const formattedData = rawData.map(d => ({
+        date: d.date ? d.date : d.day,
+        average: d.average !== undefined ? d.average : d.avg
+      }));
 
-    setChartData(formattedData);
+      setChartData(formattedData);
+
+    } catch (err) {
+      alert("Error fetching range data");
+    }
   };
 
-  // ✅ EXPORT TO EXCEL (FIXED)
+  // ✅ EXPORT (ADMIN ONLY)
   const exportToExcel = () => {
+    if (!canDownload) {
+      alert("Not allowed");
+      return;
+    }
+
     if (chartData.length === 0) {
       alert("No data to export");
       return;
@@ -300,9 +332,12 @@ export default function Dashboard() {
             </LineChart>
           </ResponsiveContainer>
 
-          <button className="search-btn" onClick={exportToExcel}>
-            ⬇ Export to Excel
-          </button>
+          {/* ✅ ROLE SAFE DOWNLOAD */}
+          {!hideDownload && canDownload && (
+            <button className="search-btn" onClick={exportToExcel}>
+              ⬇ Export to Excel
+            </button>
+          )}
         </div>
       )}
 

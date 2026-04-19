@@ -1,9 +1,12 @@
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import func
 from .database import SessionLocal
-from .models import Price
+from .models import Price,User
 from services.parser import parse_pdf
 from datetime import datetime
+from sqlalchemy.orm import Session
+from fastapi import Depends
+from app.deps import get_current_user, admin_only
 
 router = APIRouter()
 
@@ -14,7 +17,8 @@ def get_all_prices(
     category: str = None,
     city: str = None,
     start: str = None,
-    end: str = None
+    end: str = None,
+    user: User = Depends(get_current_user)
 ):
     db = SessionLocal()
 
@@ -54,7 +58,7 @@ def get_all_prices(
         db.close()
         
 @router.get("/filters")
-def filters():
+def filters(user: User = Depends(get_current_user)):
     db = SessionLocal()
 
     try:
@@ -131,7 +135,7 @@ def load_data():
 
 # ✅ SINGLE DATE AVG
 @router.get("/avg")
-def average(date: str = None, item: str = None, category: str = None, city: str = None):
+def average(date: str = None, item: str = None, category: str = None, city: str = None,user: User = Depends(get_current_user)):
     db = SessionLocal()
     try:
         query = db.query(func.avg((Price.min_price + Price.max_price) / 2))
@@ -158,7 +162,7 @@ def average(date: str = None, item: str = None, category: str = None, city: str 
 
 # ✅ RANGE AVG (🔥 FIXED SAFE VERSION)
 @router.get("/avg-range")
-def avg_range(start: str, end: str, item: str = None, category: str = None, city: str = None):
+def avg_range(start: str, end: str, item: str = None, category: str = None, city: str = None,user: User = Depends(get_current_user)):
     db = SessionLocal()
 
     try:
@@ -212,3 +216,6 @@ def avg_range(start: str, end: str, item: str = None, category: str = None, city
 
     finally:
         db.close()
+
+
+
