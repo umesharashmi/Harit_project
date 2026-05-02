@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { getFilters, getAvg, getRange } from "./api/api";
-import "./styles.css";
+import { getFilters, getAvg, getRange } from "../api/api";
+import "../styles.css";
 
 import {
   LineChart,
@@ -17,7 +17,7 @@ import { saveAs } from "file-saver";
 
 export default function Dashboard({ hideDownload = false }) {
 
-  // ✅ CHECK LOGIN + ROLE
+  //  CHECK LOGIN + ROLE
   const role = localStorage.getItem("role");
 
   useEffect(() => {
@@ -52,7 +52,7 @@ export default function Dashboard({ hideDownload = false }) {
   const [results, setResults] = useState([]);
   const [chartData, setChartData] = useState([]);
 
-  // ✅ LOAD FILTERS (WITH ERROR HANDLE)
+  //  LOAD FILTERS (WITH ERROR HANDLE)
   useEffect(() => {
     getFilters()
       .then(res => {
@@ -76,7 +76,7 @@ export default function Dashboard({ hideDownload = false }) {
 
   const filteredDates = filters.dates;
 
-  // ✅ SINGLE SEARCH
+  //  SINGLE SEARCH
   const search = async () => {
     if (!form.date || !form.item || !form.category || !form.city) {
       alert("Fill all fields");
@@ -110,7 +110,7 @@ export default function Dashboard({ hideDownload = false }) {
     }
   };
 
-  // ✅ RANGE SEARCH
+  //  RANGE SEARCH
   const rangeSearch = async () => {
     if (!form.start || !form.end || !form.item || !form.category || !form.city) {
       alert("Fill all fields");
@@ -153,7 +153,7 @@ export default function Dashboard({ hideDownload = false }) {
     }
   };
 
-  // ✅ EXPORT (ADMIN ONLY)
+  //  EXPORT (ADMIN ONLY)
   const exportToExcel = () => {
     if (!canDownload) {
       alert("Not allowed");
@@ -332,7 +332,7 @@ export default function Dashboard({ hideDownload = false }) {
             </LineChart>
           </ResponsiveContainer>
 
-          {/* ✅ ROLE SAFE DOWNLOAD */}
+          {/*  ROLE SAFE DOWNLOAD */}
           {!hideDownload && canDownload && (
             <button className="search-btn" onClick={exportToExcel}>
               ⬇ Export to Excel

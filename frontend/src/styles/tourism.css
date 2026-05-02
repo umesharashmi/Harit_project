@@ -1,0 +1,167 @@
+/* MAIN CONTAINER */
+.tourism-container {
+  padding: 30px;
+  font-family: Arial, sans-serif;
+  background: #eef1f5;
+  min-height: 100vh;
+}
+
+/* TITLE */
+.tourism-title {
+  text-align: center;
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #222;
+}
+
+/* TOGGLE BUTTONS */
+.toggle-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.toggle-buttons button {
+  padding: 10px 20px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  background: #ddd;
+  font-weight: 500;
+}
+
+.toggle-buttons .active {
+  background: linear-gradient(to right, #5f5fff, #6a5acd);
+  color: white;
+}
+
+/* FILTER BOX (TOP CARD) */
+.tourism-filters {
+  display: flex;
+  gap: 15px;
+  justify-content: space-between;
+  background: #f7f7f7;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+/* DROPDOWNS */
+.tourism-filters select {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  background: white;
+  outline: none;
+}
+
+/* DATE + BUTTON ROW */
+.date-row {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  background: #f7f7f7;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+/* DATE INPUT */
+.date-row input {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+}
+
+/* BUTTON */
+.get-btn {
+  padding: 12px 20px;
+  background: #19b37d;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.get-btn:hover {
+  background: #159a6b;
+}
+
+/* AVERAGE PRICE CARD */
+.avg-card {
+  background: linear-gradient(to right, #5f5fff, #6a5acd);
+  color: white;
+  padding: 20px;
+  border-radius: 14px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+
+/* TABLE */
+.tourism-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* HEADER */
+.tourism-table th {
+  background: linear-gradient(to right, #5f5fff, #6a5acd);
+  color: white;
+  padding: 14px;
+  text-align: left;
+}
+
+/* CELLS */
+.tourism-table td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+/* HOVER */
+.tourism-table tr:hover {
+  background: #f4f6ff;
+}
+
+/* NO DATA */
+.no-data {
+  text-align: center;
+  padding: 20px;
+  color: gray;
+}
+
+/* SEARCH BUTTON */
+.search-btn {
+  padding: 12px 20px;
+  background: linear-gradient(to right, #19b37d, #1ec98f);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+/* HOVER EFFECT */
+.search-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(to right, #159a6b, #17b87c);
+}
+
+/* CLICK EFFECT */
+.search-btn:active {
+  transform: scale(0.97);
+}

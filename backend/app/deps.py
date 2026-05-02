@@ -8,10 +8,10 @@ from .models import User
 SECRET_KEY = "secret123"
 ALGORITHM = "HS256"
 
-# 🔐 Bearer security object
+#  Bearer security object
 security = HTTPBearer()
 
-# 📦 DB connection
+#  DB connection
 def get_db():
     db = SessionLocal()
     try:

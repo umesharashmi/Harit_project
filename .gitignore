@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.db
+.env
+tourism_pdfs/
+backend/pdfs/
+backend/tourism_pdfs/

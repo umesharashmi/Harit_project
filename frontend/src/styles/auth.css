@@ -1,67 +1,131 @@
-/* 🌈 Background */
+/* 🌌 BACKGROUND (smooth animated gradient) */
 .auth-container {
   height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #6a5af9, #8360c3);
-  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #5f5fff, #6a5acd, #00c6ff);
+  background-size: 200% 200%;
+  animation: gradientMove 8s ease infinite;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* 📦 Card */
+/* 🌊 Background animation */
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* 🧊 GLASS CARD */
 .auth-card {
-  background: white;
-  padding: 40px;
-  border-radius: 15px;
-  width: 350px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  backdrop-filter: blur(25px);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 45px 40px;
+  border-radius: 24px;
+  width: 380px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
   text-align: center;
+  color: white;
+  animation: fadeIn 0.6s ease;
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
-/* 🧾 Title */
+/* ✨ Fade Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 🏷 TITLE */
 .auth-card h2 {
-  margin-bottom: 20px;
-  color: #333;
+  margin-bottom: 25px;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 1px;
 }
 
-/* 📝 Inputs */
+/* 🧾 INPUTS */
 .auth-card input {
   width: 100%;
-  padding: 12px;
-  margin: 10px 0;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  transition: 0.3s;
-}
-
-.auth-card input:focus {
-  border-color: #6a5af9;
+  padding: 14px;
+  margin: 12px 0;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
   outline: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  font-size: 14px;
+  transition: all 0.25s ease;
 }
 
-/* 🔘 Button */
+/* Placeholder */
+.auth-card input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Focus */
+.auth-card input:focus {
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid #00e0ff;
+  transform: scale(1.04);
+  box-shadow: 0 0 12px rgba(0, 224, 255, 0.5);
+}
+
+/* 🚀 BUTTON */
 .auth-card button {
   width: 100%;
-  padding: 12px;
-  margin-top: 15px;
+  padding: 14px;
+  margin-top: 18px;
   border: none;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #6a5af9, #8360c3);
+  border-radius: 14px;
+  background: linear-gradient(135deg, #00c6ff, #0072ff);
   color: white;
   font-weight: bold;
+  font-size: 15px;
   cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 0.5px;
+}
+
+/* Hover */
+.auth-card button:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Click */
+.auth-card button:active {
+  transform: scale(0.97);
+}
+
+/* 🔗 LINK */
+.auth-link {
+  margin-top: 20px;
+  display: block;
+  color: #ffffff;
+  opacity: 0.8;
+  cursor: pointer;
+  font-size: 14px;
   transition: 0.3s;
 }
 
-.auth-card button:hover {
-  opacity: 0.9;
-  transform: scale(1.02);
+.auth-link:hover {
+  opacity: 1;
+  color: #00e0ff;
+  text-decoration: underline;
 }
 
-/* 🔗 Link */
-.auth-link {
-  margin-top: 15px;
-  display: block;
-  color: #6a5af9;
-  cursor: pointer;
+/* ❌ ERROR */
+.error-text {
+  color: #ff4d6d;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 500;
 }

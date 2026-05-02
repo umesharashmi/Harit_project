@@ -2,7 +2,7 @@ import axios from "axios";
 
 const BASE_URL = "http://127.0.0.1:8000";
 
-// 🔐 JWT TOKEN HEADER FUNCTION
+//  JWT TOKEN HEADER FUNCTION
 const getAuthHeader = () => {
   const token = localStorage.getItem("token");
 
@@ -31,19 +31,38 @@ export const getRange = (params) =>
     ...getAuthHeader()
   });
 
-// ✅ REGISTER (NO TOKEN NEEDED)
+// REGISTER 
 export const registerUser = async (data) => {
   const res = await axios.post(`${BASE_URL}/register`, data);
   return res.data;
 };
 
-// ✅ LOGIN (NO TOKEN NEEDED)
+// LOGIN 
 export const loginUser = async (data) => {
   const res = await axios.post(`${BASE_URL}/login`, data);
 
-  // 🔥 TOKEN SAVE (IMPORTANT)
+  // TOKEN SAVE (IMPORTANT)
   localStorage.setItem("token", res.data.access_token);
   localStorage.setItem("role", res.data.role);
 
+  return res.data;
+};
+
+export const getCountryFilters = async () => {
+  const res = await axios.get(
+    `${BASE_URL}/country/filters`,
+    getAuthHeader()
+  );
+  return res.data;
+};
+
+export const getCountryArrivals = async (params) => {
+  const res = await axios.get(
+    `${BASE_URL}/country/search`,
+    {
+      params,
+      ...getAuthHeader()
+    }
+  );
   return res.data;
 };

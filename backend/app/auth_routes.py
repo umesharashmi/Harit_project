@@ -17,7 +17,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=400, detail="User exists")
 
-    # 👇 ROLE LOGIC (IMPORTANT)
+    #ROLE LOGIC (IMPORTANT)
     role = "admin" if user.username.lower().startswith("admin") else "viewer"
 
     new_user = User(

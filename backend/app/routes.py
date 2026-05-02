@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import func
 from .database import SessionLocal
-from .models import Price,User
+from .models import Price,User,CountryArrival
 from services.parser import parse_pdf
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -81,27 +81,27 @@ def load_data():
     try:
         import os
 
-        # 🔥 backend folder
+        #  backend folder
         BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-        # 🔥 pdf folder
+        #  pdf folder
         pdf_folder = os.path.join(BASE_DIR, "pdfs")
 
         #  check folder
         if not os.path.exists(pdf_folder):
             return {"error": f"PDF folder not found: {pdf_folder}"}
 
-        # =========================
-        # 🔥 CLEAR OLD DATA FIRST
-        # =========================
+        
+        # CLEAR OLD DATA FIRST
+        
         deleted = db.query(Price).delete()
         db.commit()
 
         print(f"OLD DATA CLEARED: {deleted} rows")
 
-        # =========================
-        # 🔥 LOAD NEW DATA
-        # =========================
+       
+        #  LOAD NEW DATA
+        
         pdf_files = [f for f in os.listdir(pdf_folder) if f.lower().endswith(".pdf")]
 
         total = 0
@@ -133,7 +133,7 @@ def load_data():
         db.close()
 
 
-# ✅ SINGLE DATE AVG
+#  SINGLE DATE AVG
 @router.get("/avg")
 def average(date: str = None, item: str = None, category: str = None, city: str = None,user: User = Depends(get_current_user)):
     db = SessionLocal()
@@ -160,7 +160,7 @@ def average(date: str = None, item: str = None, category: str = None, city: str 
         db.close()
 
 
-# ✅ RANGE AVG (🔥 FIXED SAFE VERSION)
+#  RANGE AVG ( FIXED SAFE VERSION)
 @router.get("/avg-range")
 def avg_range(start: str, end: str, item: str = None, category: str = None, city: str = None,user: User = Depends(get_current_user)):
     db = SessionLocal()
@@ -218,4 +218,54 @@ def avg_range(start: str, end: str, item: str = None, category: str = None, city
         db.close()
 
 
+@router.get("/country/filters")
+def country_filters():
+    db = SessionLocal()
+    try:
+        countries = [c[0] for c in db.query(CountryArrival.country).distinct()]
+        years = [y[0] for y in db.query(CountryArrival.year).distinct()]
+
+        return {
+            "countries": countries,
+            "years": sorted(years),
+            "months": [
+                "jan","feb","mar","apr","may","jun",
+                "jul","aug","sep","oct","nov","dec"
+            ]
+        }
+    finally:
+        db.close()
+
+@router.get("/country/search")
+def search_country(year: int, country: str = None, month: str = None):
+    db = SessionLocal()
+
+    try:
+        query = db.query(CountryArrival).filter(CountryArrival.year == year)
+
+        if country:
+            query = query.filter(CountryArrival.country == country)
+
+        rows = query.all()
+
+        result = []
+
+        for r in rows:
+
+            if month:
+                value = getattr(r, month, 0)
+            else:
+                value = r.total
+
+            result.append({
+                "country": r.country,
+                "year": r.year,
+                "month": month,
+                "count": value
+            })
+
+        return result
+
+    finally:
+        db.close()
 

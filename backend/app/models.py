@@ -19,3 +19,26 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     password = Column(String)
     role = Column(String)  # "view" or "download"
+
+
+class CountryArrival(Base):
+    __tablename__ = "country_arrivals"
+
+    id = Column(String, primary_key=True)
+    country = Column(String)
+    year = Column(Integer)
+
+    jan = Column(Integer)
+    feb = Column(Integer)
+    mar = Column(Integer)
+    apr = Column(Integer)
+    may = Column(Integer)
+    jun = Column(Integer)
+    jul = Column(Integer)
+    aug = Column(Integer)
+    sep = Column(Integer)
+    oct = Column(Integer)
+    nov = Column(Integer)
+    dec = Column(Integer)
+
+    total = Column(Integer)

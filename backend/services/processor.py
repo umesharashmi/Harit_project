@@ -51,3 +51,4 @@ def process_all():
 
     db.close()
     print("PROCESS COMPLETED")
+
