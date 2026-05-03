@@ -5,9 +5,6 @@ from app.database import Base, engine
 from app.routes import router as main_router
 from app.auth_routes import router as auth_router
 
-from services.processor import process_all
-from services.tourism_processor import process_country
-
 app = FastAPI(title="Harit API")
 
 # ---------------- ROOT ROUTE ----------------
@@ -18,10 +15,7 @@ def root():
 # ---------------- CORS ----------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000"
-    ],
+    allow_origins=["*"],  # Railway + frontend safe (you can restrict later)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -34,15 +28,8 @@ Base.metadata.create_all(bind=engine)
 app.include_router(main_router)
 app.include_router(auth_router)
 
-# ---------------- STARTUP ----------------
+# ---------------- STARTUP (SAFE VERSION) ----------------
 @app.on_event("startup")
 def startup_event():
-    print("🚀 STARTING HARIT API...")
-
-    try:
-        process_all()
-        process_country()
-        print("✅ STARTUP TASKS DONE")
-
-    except Exception as e:
-        print("❌ STARTUP ERROR:", e)
+    print("🚀 HARIT API STARTING...")
+    print("✅ API READY")
