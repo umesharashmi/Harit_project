@@ -12,10 +12,12 @@ app = FastAPI(title="Harit API")
 def root():
     return {"message": "Harit API is running 🚀"}
 
-# ---------------- CORS ----------------
+# ---------------- CORS (FIXED) ----------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://harit-project-fj4v.vercel.app"],  # Railway + frontend safe (you can restrict later)
+    allow_origins=[
+        "https://harit-project-fj4v.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,7 +30,7 @@ Base.metadata.create_all(bind=engine)
 app.include_router(main_router)
 app.include_router(auth_router)
 
-# ---------------- STARTUP (SAFE VERSION) ----------------
+# ---------------- STARTUP ----------------
 @app.on_event("startup")
 def startup_event():
     print("🚀 HARIT API STARTING...")
