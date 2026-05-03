@@ -24,21 +24,34 @@ export default function CountryArrival() {
   useEffect(() => {
     getCountryFilters()
       .then((res) => {
-        setFilters(res.data);   // ✅ FIX 1
+        setFilters(res?.data || {
+          countries: [],
+          years: [],
+          months: []
+        });
       })
-      .catch((err) => console.log("FILTER ERROR:", err));
+      .catch((err) => {
+        console.log("FILTER ERROR:", err);
+        setFilters({
+          countries: [],
+          years: [],
+          months: []
+        });
+      });
   }, []);
 
   // SEARCH
   const search = () => {
-    if (!year) return; // ✅ FIX 2 (prevent 422 error)
+    if (!year) return; // prevent 422 error
 
     getCountryArrivals({
-      year: Number(year),  // ✅ FIX 3
+      year: Number(year),
       country,
       month
     })
-      .then((res) => setData(res))
+      .then((res) => {
+        setData(res || []);
+      })
       .catch((err) => console.log("SEARCH ERROR:", err));
   };
 
@@ -54,21 +67,21 @@ export default function CountryArrival() {
 
         <select onChange={(e) => setYear(e.target.value)}>
           <option value="">Select Year</option>
-          {filters.years.map((y) => (
+          {(filters.years || []).map((y) => (
             <option key={y} value={y}>{y}</option>
           ))}
         </select>
 
         <select onChange={(e) => setCountry(e.target.value)}>
           <option value="">All Countries</option>
-          {filters.countries.map((c) => (
+          {(filters.countries || []).map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}
         </select>
 
         <select onChange={(e) => setMonth(e.target.value)}>
           <option value="">Total</option>
-          {filters.months.map((m) => (
+          {(filters.months || []).map((m) => (
             <option key={m} value={m}>{m}</option>
           ))}
         </select>
