@@ -8,28 +8,27 @@ from app.deps import get_db
 
 router = APIRouter()
 
-# REGISTER
 @router.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
+    try:
+        existing = db.query(User).filter(User.username == user.username).first()
 
-    # check existing user
-    existing = db.query(User).filter(User.username == user.username).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="User exists")
+        role = "admin" if user.username.lower().startswith("admin") else "viewer"
 
-    #ROLE LOGIC (IMPORTANT)
-    role = "admin" if user.username.lower().startswith("admin") else "viewer"
+        new_user = User(
+            username=user.username,
+            password=hash_password(user.password),
+            role=role
+        )
 
-    new_user = User(
-        username=user.username,
-        password=hash_password(user.password),  # 🔐 HASH
-        role=role
-    )
+        db.add(new_user)
+        db.commit()
 
-    db.add(new_user)
-    db.commit()
+        return {"message": "success"}
 
-    return {"message": f"{role} user created"}
+    except Exception as e:
+        print("🔥 REGISTER ERROR:", e)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # LOGIN
