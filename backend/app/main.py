@@ -8,38 +8,41 @@ from app.auth_routes import router as auth_router
 from services.processor import process_all
 from services.tourism_processor import process_country
 
-app = FastAPI()
+app = FastAPI(title="Harit API")
 
-# CORS
+# ---------------- ROOT ROUTE ----------------
+@app.get("/")
+def root():
+    return {"message": "Harit API is running 🚀"}
+
+# ---------------- CORS ----------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:8000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# DB
+# ---------------- DATABASE ----------------
 Base.metadata.create_all(bind=engine)
 
-# Routes
+# ---------------- ROUTES ----------------
 app.include_router(main_router)
 app.include_router(auth_router)
 
-# STARTUP
+# ---------------- STARTUP ----------------
 @app.on_event("startup")
 def startup_event():
-    print("🚀 STARTING...")
+    print("🚀 STARTING HARIT API...")
 
     try:
-        # 1. price processing
         process_all()
         process_country()
-
-    
-
-        
-        print("✅ DONE")
+        print("✅ STARTUP TASKS DONE")
 
     except Exception as e:
-        print("❌ ERROR:", e)
+        print("❌ STARTUP ERROR:", e)
