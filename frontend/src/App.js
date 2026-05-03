@@ -10,12 +10,28 @@ import Vegetable from "./pages/Vegetable";
 import AdminDashboard from "./pages/AdminDashboard";
 import ViewDashboard from "./pages/ViewDashboard";
 
-/* PRIVATE ROUTE */
+/* ✅ PRIVATE ROUTE */
 function PrivateRoute({ children }) {
   const token = localStorage.getItem("token");
 
   if (!token) {
-    return <Navigate to="/" />;
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
+
+/* ✅ ROLE ROUTE */
+function RoleRoute({ children, role: allowedRole }) {
+  const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role");
+
+  if (!token) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (role !== allowedRole) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;
@@ -28,16 +44,14 @@ function PublicRoute({ children }) {
 
   if (!token) return children;
 
-  if (role === "admin") return <Navigate to="/admin" />;
-  if (role === "viewer") return <Navigate to="/viewer" />;
+  if (role === "admin") return <Navigate to="/admin" replace />;
+  if (role === "viewer") return <Navigate to="/viewer" replace />;
 
-  return <Navigate to="/dashboard" />;
+  return <Navigate to="/dashboard" replace />;
 }
 
-/*  APP */
+/* APP */
 function App() {
-  const role = localStorage.getItem("role");
-
   return (
     <BrowserRouter>
       <Routes>
@@ -61,7 +75,7 @@ function App() {
           }
         />
 
-        {/* PROTECTED */}
+        {/* PRIVATE ROUTES */}
         <Route
           path="/dashboard"
           element={
@@ -89,30 +103,22 @@ function App() {
           }
         />
 
-        {/* ROLE BASED ROUTES */}
+        {/* ROLE BASED */}
         <Route
           path="/admin"
           element={
-            role === "admin" ? (
-              <PrivateRoute>
-                <AdminDashboard />
-              </PrivateRoute>
-            ) : (
-              <Navigate to="/" />
-            )
+            <RoleRoute role="admin">
+              <AdminDashboard />
+            </RoleRoute>
           }
         />
 
         <Route
           path="/viewer"
           element={
-            role === "viewer" ? (
-              <PrivateRoute>
-                <ViewDashboard />
-              </PrivateRoute>
-            ) : (
-              <Navigate to="/" />
-            )
+            <RoleRoute role="viewer">
+              <ViewDashboard />
+            </RoleRoute>
           }
         />
 
