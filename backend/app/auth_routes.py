@@ -23,13 +23,13 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 
         db.add(new_user)
         db.commit()
+        db.refresh(new_user)
 
         return {"message": "success"}
 
     except Exception as e:
-        print("🔥 REGISTER ERROR:", e)
+        print("REGISTER ERROR:", e)
         raise HTTPException(status_code=500, detail=str(e))
-
 
 # LOGIN
 @router.post("/login")
