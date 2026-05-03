@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { loginUser } from "../api/api";
-import Navbar from "../component/Navbar";
 import "../styles/auth.css";
 
 export default function Login() {
