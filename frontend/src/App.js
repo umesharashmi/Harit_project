@@ -10,18 +10,27 @@ import Vegetable from "./pages/Vegetable";
 import AdminDashboard from "./pages/AdminDashboard";
 import ViewDashboard from "./pages/ViewDashboard";
 
-/* ✅ PRIVATE ROUTE */
-function PrivateRoute({ children }) {
-  const token = localStorage.getItem("token");
+/* =========================
+   AUTH CHECK HELPER
+========================= */
+const isLoggedIn = () => {
+  return !!localStorage.getItem("token");
+};
 
-  if (!token) {
+/* =========================
+   PRIVATE ROUTE
+========================= */
+function PrivateRoute({ children }) {
+  if (!isLoggedIn()) {
     return <Navigate to="/" replace />;
   }
 
   return children;
 }
 
-/* ✅ ROLE ROUTE */
+/* =========================
+   ROLE ROUTE
+========================= */
 function RoleRoute({ children, role: allowedRole }) {
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
@@ -37,7 +46,9 @@ function RoleRoute({ children, role: allowedRole }) {
   return children;
 }
 
-/* PUBLIC ROUTE */
+/* =========================
+   PUBLIC ROUTE
+========================= */
 function PublicRoute({ children }) {
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
@@ -50,13 +61,15 @@ function PublicRoute({ children }) {
   return <Navigate to="/dashboard" replace />;
 }
 
-/* APP */
+/* =========================
+   APP
+========================= */
 function App() {
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* PUBLIC */}
+        {/* PUBLIC ROUTES */}
         <Route
           path="/"
           element={
@@ -103,7 +116,7 @@ function App() {
           }
         />
 
-        {/* ROLE BASED */}
+        {/* ROLE BASED ROUTES */}
         <Route
           path="/admin"
           element={
