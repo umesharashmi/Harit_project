@@ -24,11 +24,7 @@ export default function CountryArrival() {
   useEffect(() => {
     getCountryFilters()
       .then((res) => {
-        setFilters(res?.data || {
-          countries: [],
-          years: [],
-          months: []
-        });
+        setFilters(res);   // ✅ FIXED
       })
       .catch((err) => {
         console.log("FILTER ERROR:", err);
@@ -42,7 +38,7 @@ export default function CountryArrival() {
 
   // SEARCH
   const search = () => {
-    if (!year) return; // prevent 422 error
+    if (!year) return;
 
     getCountryArrivals({
       year: Number(year),
@@ -50,7 +46,7 @@ export default function CountryArrival() {
       month
     })
       .then((res) => {
-        setData(res || []);
+        setData(res);   // ✅ FIXED
       })
       .catch((err) => console.log("SEARCH ERROR:", err));
   };
