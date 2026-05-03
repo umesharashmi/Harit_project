@@ -15,7 +15,7 @@ def root():
 # ---------------- CORS ----------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Railway + frontend safe (you can restrict later)
+    allow_origins=["https://harit-project-fj4v.vercel.app"],  # Railway + frontend safe (you can restrict later)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
