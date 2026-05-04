@@ -8,6 +8,8 @@ from app.auth_routes import router as auth_router
 from services.processor import process_all
 from services.tourism_processor import process_country
 
+from scheduler import start_scheduler
+
 app = FastAPI(title="Harit API")
 
 # ---------------- ROOT ----------------
@@ -39,6 +41,7 @@ app.include_router(auth_router)
 @app.on_event("startup")
 def startup_event():
     print("🚀 HARIT API STARTING...")
+    start_scheduler()
 
     try:
         process_all()
