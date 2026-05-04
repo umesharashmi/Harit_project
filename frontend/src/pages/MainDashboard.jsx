@@ -16,8 +16,8 @@ export default function MainDashboard() {
         </p>
 
         <ul className="dashboard-list">
-          <li>Tourism Data</li>
-          <li>Vegetable Price Data</li>
+          <li>Tourism Data..</li>
+          <li>Vegetable Price Data..</li>
         </ul>
 
       </div>
