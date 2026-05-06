@@ -1,34 +1,34 @@
-import requests, os
-from bs4 import BeautifulSoup
-from urllib.parse import urljoin
+from datetime import datetime, timedelta
+import requests
+import os
 
-BASE = "https://www.cse.lk"
-URL = BASE + "/publications/cse-daily.component.html"
+BASE = "https://www.cse.lk/publications/cse-daily/"
 DIR = "stock_pdfs"
+
+def get_latest_pdfs():
+    pdfs = []
+    today = datetime.today()
+
+    for i in range(15):  # increase range
+        d = today - timedelta(days=i)
+
+        url = BASE + f"cse_daily_{d.strftime('%Y_%m_%d')}.pdf"
+
+        r = requests.get(url)
+
+        if r.status_code == 200:
+            pdfs.append(url)
+
+        if len(pdfs) == 3:
+            break
+
+    return pdfs
 
 
 def download_all():
     os.makedirs(DIR, exist_ok=True)
 
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
-
-    res = requests.get(URL, headers=headers)
-    soup = BeautifulSoup(res.text, "html.parser")
-
-    links = []
-
-    # 🔍 find PDF links
-    for a in soup.find_all("a", href=True):
-        href = a["href"]
-
-        if "cse_daily" in href and href.endswith(".pdf"):
-            full_url = urljoin(BASE, href)
-            links.append(full_url)
-
-    # ✅ take latest 3 (like your requirement)
-    links = links[:3]
+    links = get_latest_pdfs()
 
     print("FOUND PDFs:", links)
 
@@ -41,7 +41,7 @@ def download_all():
         if not os.path.exists(path):
             print("⬇️ Downloading:", name)
 
-            r = requests.get(url, headers=headers)
+            r = requests.get(url)
 
             if r.status_code != 200:
                 print("❌ Failed:", url)
@@ -52,12 +52,5 @@ def download_all():
 
         files.append({"file": path})
 
-    # 🧹 delete old files (same as your HARTI logic)
-    for f in os.listdir(DIR):
-        full = f"{DIR}/{f}"
-        if not any(full == item["file"] for item in files):
-            os.remove(full)
-
     print("FILES:", files)
-
     return files
