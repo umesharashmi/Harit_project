@@ -269,3 +269,37 @@ def search_country(year: int, country: str = None, month: str = None):
     finally:
         db.close()
 
+
+@router.get("/country/total-by-year-calc")
+def total_by_year_calc():
+    db = SessionLocal()
+
+    try:
+        result = db.query(
+            CountryArrival.year,
+            func.sum(
+                CountryArrival.jan +
+                CountryArrival.feb +
+                CountryArrival.mar +
+                CountryArrival.apr +
+                CountryArrival.may +
+                CountryArrival.jun +
+                CountryArrival.jul +
+                CountryArrival.aug +
+                CountryArrival.sep +
+                CountryArrival.oct +
+                CountryArrival.nov +
+                CountryArrival.dec
+            ).label("total_arrivals")
+        ).group_by(CountryArrival.year).all()
+
+        return [
+            {
+                "year": r[0],
+                "total_arrivals": int(r[1]) if r[1] else 0
+            }
+            for r in result
+        ]
+
+    finally:
+        db.close()

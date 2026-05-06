@@ -66,3 +66,11 @@ export const getCountryArrivals = async (params) => {
   );
   return res.data;
 };
+
+export const getCountryCompare = async () => {
+  const res = await axios.get(
+    `${BASE_URL}/country/compare-years`,
+    getAuthHeader()
+  );
+  return res.data;
+};
