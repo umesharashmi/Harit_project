@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import requests
 
-BASE_CDN = "https://www.cse.lk/publications/cse-daily"
+BASE_CDN = "https://www.cse.lk/publications/cse-daily/"
 
 def get_latest_three_pdfs():
     pdfs = []
