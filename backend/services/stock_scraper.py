@@ -1,52 +1,30 @@
-from datetime import datetime, timedelta
 import requests
+from bs4 import BeautifulSoup
+import os
 
-BASE_CDN = "https://cdn.cse.lk/cmt/upload_cse_reports/daily_reports/"
+BASE_URL = "https://www.cse.lk/publications/cse-daily"
+SAVE_DIR = "cse_pdfs"
 
-def get_latest_three_pdfs():
+
+def get_pdf_links():
+    r = requests.get(BASE_URL)
+
+    if r.status_code != 200:
+        print("❌ Failed to load page")
+        return []
+
+    soup = BeautifulSoup(r.text, "html.parser")
+
     pdfs = []
-    today = datetime.today()
 
-    for i in range(10):  # check last 10 days
-        d = today - timedelta(days=i)
+    for a in soup.find_all("a", href=True):
+        link = a["href"]
 
-        url = BASE_CDN + f"cse_daily_{d.strftime('%Y_%m_%d')}.pdf"
+        if ".pdf" in link.lower():
+            if link.startswith("/"):
+                link = "https://www.cse.lk" + link
 
-        r = requests.head(url)
+            pdfs.append(link)
 
-        if r.status_code == 200:
-            pdfs.append(url)
-
-        if len(pdfs) == 3:
-            break
-
-    print("FOUND PDFs:", pdfs)
-    return pdfs
-
-
-def download_all():
-    files = []
-
-    urls = get_latest_three_pdfs()
-
-    if not urls:
-        print("❌ No PDFs found")
-        return files
-
-    for url in urls:
-        name = url.split("/")[-1]
-
-        r = requests.get(url)
-
-        if r.status_code != 200:
-            print("❌ Failed:", url)
-            continue
-
-        with open(name, "wb") as f:
-            f.write(r.content)
-
-        print(f"✅ Downloaded: {name}")
-
-        files.append({"file": name})
-
-    return files
+    print("FOUND PDFs:", pdfs[:5])  # preview
+    return pdfs[:3]  # latest 3
