@@ -11,6 +11,7 @@ def process_stocks():
     print("🔥 STOCK PROCESS START")
 
     files = download_all()
+    print("FILES:", files) 
 
     counter = 0
 
