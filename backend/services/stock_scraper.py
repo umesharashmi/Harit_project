@@ -7,30 +7,44 @@ URL = BASE + "/publications/cse-daily"
 
 
 def get_latest_three_pdfs():
-    soup = BeautifulSoup(requests.get(URL).text, "html.parser")
+    res = requests.get(URL)
+    soup = BeautifulSoup(res.text, "html.parser")
 
     pdfs = []
 
-    for a in soup.find_all("a"):
-        href = a.get("href", "")
-        if "cse_daily" in href and href.endswith(".pdf"):
+    # 🔥 grab ALL pdf links
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+
+        # only pdf files
+        if ".pdf" in href:
             full = urljoin(BASE, href)
             pdfs.append(full)
 
     # remove duplicates
     pdfs = list(dict.fromkeys(pdfs))
 
-    return pdfs[:3]   # 🔥 ONLY 3 FILES
+    print("FOUND PDFs:", pdfs)
+
+    return pdfs[:3]   # latest 3
 
 
 def download_all():
     files = []
 
-    for url in get_latest_three_pdfs():
+    urls = get_latest_three_pdfs()
+
+    if not urls:
+        print("❌ No PDFs found")
+        return files
+
+    for url in urls:
         name = url.split("/")[-1]
 
         r = requests.get(url)
+
         if r.status_code != 200:
+            print("❌ Failed:", url)
             continue
 
         with open(name, "wb") as f:
