@@ -37,15 +37,16 @@
   color: white;
 }
 
-/* FILTER BOX (TOP CARD) */
 .tourism-filters {
   display: flex;
+  flex-wrap: wrap;   /* ⭐ IMPORTANT */
   gap: 15px;
-  justify-content: space-between;
-  background: #f7f7f7;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 20px;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.tourism-filters button {
+  flex-shrink: 0;
 }
 
 /* DROPDOWNS */
