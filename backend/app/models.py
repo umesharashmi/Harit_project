@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float,Integer
+from sqlalchemy import Column, String, Float,Integer,Date
 from .database import Base
 
 class Price(Base):
@@ -42,3 +42,21 @@ class CountryArrival(Base):
     dec = Column(Integer)
 
     total = Column(Integer)
+
+class Stock(Base):
+    __tablename__ = "stocks"
+
+    id = Column(String, primary_key=True)
+    date = Column(Date)
+
+    board = Column(String)
+    company = Column(String)
+    type = Column(String)
+
+    price = Column(Float)
+    quantity = Column(Integer)
+
+    gain = Column(Float)   # +
+    loss = Column(Float)   # -
+
+    trades = Column(Integer)
