@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import threading
 
 from app.database import Base, engine
 from app.routes import router as main_router
@@ -41,12 +42,18 @@ app.include_router(auth_router)
 @app.on_event("startup")
 def startup_event():
     print("🚀 HARIT API STARTING...")
+    
+    # Start scheduler
     start_scheduler()
 
-    try:
-        process_all()
-        process_country()
-        print("✅ STARTUP TASKS DONE")
+    # Run heavy tasks in background
+    def run_tasks():
+        try:
+            print("⏳ Processing data...")
+            process_all()
+            process_country()
+            print("✅ STARTUP TASKS DONE")
+        except Exception as e:
+            print("❌ STARTUP ERROR:", e)
 
-    except Exception as e:
-        print("❌ STARTUP ERROR:", e)
+    threading.Thread(target=run_tasks, daemon=True).start()
