@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import requests
 import os
 
-BASE = "https://www.cse.lk/publications/cse-daily/"
+BASE = "https://www.cse.lk/publications/cse-daily"
 DIR = "stock_pdfs"
 
 def get_latest_pdfs():
