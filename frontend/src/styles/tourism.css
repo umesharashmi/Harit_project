@@ -15,129 +15,34 @@
   color: #222;
 }
 
-/* TOGGLE BUTTONS */
-.toggle-buttons {
+/* FILTER BOX (NEW CLEAN LAYOUT) */
+.filters-box {
   display: flex;
-  justify-content: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+
+  background: white;
+  padding: 15px;
+  border-radius: 12px;
   margin-bottom: 20px;
 }
 
-.toggle-buttons button {
-  padding: 10px 20px;
-  border-radius: 20px;
-  border: none;
-  cursor: pointer;
-  background: #ddd;
-  font-weight: 500;
-}
-
-.toggle-buttons .active {
-  background: linear-gradient(to right, #5f5fff, #6a5acd);
-  color: white;
-}
-
-.tourism-filters {
-  display: flex;
-  flex-wrap: wrap;   /* ⭐ IMPORTANT */
-  gap: 15px;
-  justify-content: flex-start;
-  align-items: center;
-}
-
-.tourism-filters button {
-  flex-shrink: 0;
-}
-
 /* DROPDOWNS */
-.tourism-filters select {
+.filters-box select {
   flex: 1;
-  padding: 12px;
-  border-radius: 10px;
+  min-width: 160px;
+  padding: 10px;
+  border-radius: 8px;
   border: 1px solid #ccc;
   background: white;
   outline: none;
 }
 
-/* DATE + BUTTON ROW */
-.date-row {
-  display: flex;
-  gap: 15px;
-  align-items: center;
-  background: #f7f7f7;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 20px;
-}
-
-/* DATE INPUT */
-.date-row input {
-  flex: 1;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid #ccc;
-}
-
-/* BUTTON */
-.get-btn {
-  padding: 12px 20px;
-  background: #19b37d;
-  color: white;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.get-btn:hover {
-  background: #159a6b;
-}
-
-/* AVERAGE PRICE CARD */
-.avg-card {
-  background: linear-gradient(to right, #5f5fff, #6a5acd);
-  color: white;
-  padding: 20px;
-  border-radius: 14px;
-  text-align: center;
-  font-size: 20px;
-  font-weight: 500;
-  margin-bottom: 20px;
-}
-
-/* TABLE */
-.tourism-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: white;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-/* HEADER */
-.tourism-table th {
-  background: linear-gradient(to right, #5f5fff, #6a5acd);
-  color: white;
-  padding: 14px;
-  text-align: left;
-}
-
-/* CELLS */
-.tourism-table td {
-  padding: 12px;
-  border-bottom: 1px solid #eee;
-}
-
-/* HOVER */
-.tourism-table tr:hover {
-  background: #f4f6ff;
-}
-
-/* NO DATA */
-.no-data {
-  text-align: center;
-  padding: 20px;
-  color: gray;
+/* BUTTONS */
+.filters-box button {
+  flex: 0;
 }
 
 /* SEARCH BUTTON */
@@ -155,14 +60,66 @@
   transition: all 0.2s ease;
 }
 
-/* HOVER EFFECT */
+/* HOVER */
 .search-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   background: linear-gradient(to right, #159a6b, #17b87c);
 }
 
-/* CLICK EFFECT */
+/* CLICK */
 .search-btn:active {
   transform: scale(0.97);
+}
+
+/* TABLE */
+.tourism-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* TABLE HEADER */
+.tourism-table th {
+  background: linear-gradient(to right, #5f5fff, #6a5acd);
+  color: white;
+  padding: 14px;
+  text-align: left;
+}
+
+/* TABLE CELLS */
+.tourism-table td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+/* ROW HOVER */
+.tourism-table tr:hover {
+  background: #f4f6ff;
+}
+
+/* NO DATA */
+.no-data {
+  text-align: center;
+  padding: 20px;
+  color: gray;
+}
+
+/* RESPONSIVE (MOBILE FIX) */
+@media (max-width: 768px) {
+  .filters-box {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters-box select {
+    width: 100%;
+  }
+
+  .search-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }

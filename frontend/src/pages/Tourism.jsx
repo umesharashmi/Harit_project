@@ -20,27 +20,22 @@ export default function CountryArrival() {
   const [month, setMonth] = useState("");
 
   const [data, setData] = useState([]);
-
-  // ⭐ NEW: compare mode
   const [compareMode, setCompareMode] = useState(false);
 
   // LOAD FILTERS
   useEffect(() => {
     getCountryFilters()
-      .then((res) => {
-        setFilters(res);
-      })
-      .catch((err) => {
-        console.log("FILTER ERROR:", err);
+      .then((res) => setFilters(res))
+      .catch(() =>
         setFilters({
           countries: [],
           years: [],
           months: []
-        });
-      });
+        })
+      );
   }, []);
 
-  // NORMAL SEARCH (UNCHANGED LOGIC)
+  // NORMAL SEARCH
   const search = () => {
     setCompareMode(false);
 
@@ -51,24 +46,22 @@ export default function CountryArrival() {
       country,
       month
     })
-      .then((res) => {
-        setData(res);
-      })
-      .catch((err) => console.log("SEARCH ERROR:", err));
+      .then((res) => setData(res))
+      .catch((err) => console.log(err));
   };
 
-  // ⭐ NEW: COMPARE (2025 + 2026)
+  // COMPARE MODE
   const loadCompare = () => {
     getCountryArrivals({
-      year: null,   // important → no filter
+      year: null,
       country,
-      month
+      month: ""
     })
       .then((res) => {
         setData(res);
         setCompareMode(true);
       })
-      .catch((err) => console.log("COMPARE ERROR:", err));
+      .catch((err) => console.log(err));
   };
 
   return (
@@ -82,8 +75,8 @@ export default function CountryArrival() {
           : "Country Arrival Report"}
       </h2>
 
-      {/* FILTERS */}
-      <div className="tourism-filters">
+      {/* FILTER BOX */}
+      <div className="filters-box">
 
         <select onChange={(e) => setYear(e.target.value)}>
           <option value="">Select Year</option>
@@ -106,17 +99,12 @@ export default function CountryArrival() {
           ))}
         </select>
 
-        {/* NORMAL SEARCH */}
         <button className="search-btn" onClick={search}>
           🔍 Search
         </button>
 
-        {/* ⭐ COMPARE BUTTON */}
-        <button
-          className="search-btn"
-          onClick={loadCompare}
-        >
-          📊 Compare 2025-2026
+        <button className="search-btn" onClick={loadCompare}>
+          📊 Compare
         </button>
 
       </div>
