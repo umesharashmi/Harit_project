@@ -1,52 +1,63 @@
-from datetime import datetime, timedelta
-import requests
+import requests, os
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
 
-BASE_CDN = "https://www.cse.lk/publications/cse-daily/"
-
-def get_latest_three_pdfs():
-    pdfs = []
-    today = datetime.today()
-
-    for i in range(10):  # check last 10 days
-        d = today - timedelta(days=i)
-
-        url = BASE_CDN + f"cse_daily_{d.strftime('%Y_%m_%d')}.pdf"
-
-        r = requests.head(url)
-
-        if r.status_code == 200:
-            pdfs.append(url)
-
-        if len(pdfs) == 3:
-            break
-
-    print("FOUND PDFs:", pdfs)
-    return pdfs
+BASE = "https://www.cse.lk"
+URL = BASE + "/pages/cse-daily/cse-daily.component.html"
+DIR = "stock_pdfs"
 
 
 def download_all():
+    os.makedirs(DIR, exist_ok=True)
+
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
+
+    res = requests.get(URL, headers=headers)
+    soup = BeautifulSoup(res.text, "html.parser")
+
+    links = []
+
+    # 🔍 find PDF links
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+
+        if "cse_daily" in href and href.endswith(".pdf"):
+            full_url = urljoin(BASE, href)
+            links.append(full_url)
+
+    # ✅ take latest 3 (like your requirement)
+    links = links[:3]
+
+    print("FOUND PDFs:", links)
+
     files = []
 
-    urls = get_latest_three_pdfs()
-
-    if not urls:
-        print("❌ No PDFs found")
-        return files
-
-    for url in urls:
+    for url in links:
         name = url.split("/")[-1]
+        path = f"{DIR}/{name}"
 
-        r = requests.get(url)
+        if not os.path.exists(path):
+            print("⬇️ Downloading:", name)
 
-        if r.status_code != 200:
-            print("❌ Failed:", url)
-            continue
+            r = requests.get(url, headers=headers)
 
-        with open(name, "wb") as f:
-            f.write(r.content)
+            if r.status_code != 200:
+                print("❌ Failed:", url)
+                continue
 
-        print(f"✅ Downloaded: {name}")
+            with open(path, "wb") as f:
+                f.write(r.content)
 
-        files.append({"file": name})
+        files.append({"file": path})
+
+    # 🧹 delete old files (same as your HARTI logic)
+    for f in os.listdir(DIR):
+        full = f"{DIR}/{f}"
+        if not any(full == item["file"] for item in files):
+            os.remove(full)
+
+    print("FILES:", files)
 
     return files
