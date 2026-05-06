@@ -237,11 +237,15 @@ def country_filters():
         db.close()
 
 @router.get("/country/search")
-def search_country(year: int, country: str = None, month: str = None):
+def search_country(year: int = None, country: str = None, month: str = None):
     db = SessionLocal()
 
     try:
-        query = db.query(CountryArrival).filter(CountryArrival.year == year)
+        query = db.query(CountryArrival)
+
+        # ✅ FIX: year optional
+        if year is not None:
+            query = query.filter(CountryArrival.year == year)
 
         if country:
             query = query.filter(CountryArrival.country == country)
@@ -251,7 +255,6 @@ def search_country(year: int, country: str = None, month: str = None):
         result = []
 
         for r in rows:
-
             if month:
                 value = getattr(r, month, 0)
             else:

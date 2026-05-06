@@ -50,19 +50,17 @@ export default function CountryArrival() {
       .catch((err) => console.log(err));
   };
 
-  // COMPARE MODE
   const loadCompare = () => {
-    getCountryArrivals({
-      year: null,
-      country,
-      month: ""
+  getCountryArrivals({
+    country,
+    month: ""
+  })
+    .then((res) => {
+      setData(res);
+      setCompareMode(true);
     })
-      .then((res) => {
-        setData(res);
-        setCompareMode(true);
-      })
-      .catch((err) => console.log(err));
-  };
+    .catch((err) => console.log(err));
+};
 
   return (
     <div className="tourism-container">
