@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
 BASE = "https://www.cse.lk"
-URL = BASE + "/pages/cse-daily/cse-daily.component.html"
+URL = BASE + "/publications/cse-daily.component.html"
 DIR = "stock_pdfs"
 
 
