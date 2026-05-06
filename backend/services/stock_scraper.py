@@ -1,32 +1,27 @@
+from datetime import datetime, timedelta
 import requests
-from bs4 import BeautifulSoup
-from urllib.parse import urljoin
 
-BASE = "https://www.cse.lk"
-URL = BASE + "/publications/cse-daily"
-
+BASE_CDN = "https://cdn.cse.lk/cmt/upload_cse_reports/daily_reports/"
 
 def get_latest_three_pdfs():
-    res = requests.get(URL)
-    soup = BeautifulSoup(res.text, "html.parser")
-
     pdfs = []
+    today = datetime.today()
 
-    # 🔥 grab ALL pdf links
-    for a in soup.find_all("a", href=True):
-        href = a["href"]
+    for i in range(10):  # check last 10 days
+        d = today - timedelta(days=i)
 
-        # only pdf files
-        if ".pdf" in href:
-            full = urljoin(BASE, href)
-            pdfs.append(full)
+        url = BASE_CDN + f"cse_daily_{d.strftime('%Y_%m_%d')}.pdf"
 
-    # remove duplicates
-    pdfs = list(dict.fromkeys(pdfs))
+        r = requests.head(url)
+
+        if r.status_code == 200:
+            pdfs.append(url)
+
+        if len(pdfs) == 3:
+            break
 
     print("FOUND PDFs:", pdfs)
-
-    return pdfs[:3]   # latest 3
+    return pdfs
 
 
 def download_all():
@@ -52,8 +47,6 @@ def download_all():
 
         print(f"✅ Downloaded: {name}")
 
-        files.append({
-            "file": name
-        })
+        files.append({"file": name})
 
     return files
