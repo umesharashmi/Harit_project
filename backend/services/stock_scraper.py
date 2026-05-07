@@ -1,89 +1,44 @@
 import os
-import time
 import requests
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
 BASE = "https://www.cse.lk"
-URL = "https://www.cse.lk/publications/cse-daily"
-DIR = "stock_pdfs"
+URL = BASE + "/publications/cse-daily"
+
+SAVE_DIR = "pdfs/stocks"
 
 
-def download_all():
+def download_latest_pdf():
 
-    os.makedirs(DIR, exist_ok=True)
+    os.makedirs(SAVE_DIR, exist_ok=True)
 
-    downloaded = []
+    soup = BeautifulSoup(requests.get(URL).text, "html.parser")
 
-    print("🚀 START SELENIUM SCRAPER")
+    pdf_url = None
 
-    # 🔥 Chrome setup (IMPORTANT FIXED)
-    options = Options()
-    options.add_argument("--headless=new")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-gpu")
+    for a in soup.find_all("a"):
 
-    driver = webdriver.Chrome(options=options)
+        href = a.get("href", "")
 
-    try:
+        if ".pdf" in href:
 
-        print("🌐 Opening page...")
+            pdf_url = urljoin(BASE, href)
+            break
 
-        driver.get(URL)
+    if not pdf_url:
+        print("No PDF found")
+        return None
 
-        # better than fixed sleep
-        time.sleep(8)
+    filename = pdf_url.split("/")[-1]
 
-        # full rendered HTML
-        html = driver.page_source
+    path = os.path.join(SAVE_DIR, filename)
 
-        pdfs = []
+    response = requests.get(pdf_url)
 
-        # extract PDF links directly (better logic)
-        for line in html.split('"'):
+    with open(path, "wb") as f:
+        f.write(response.content)
 
-            if ".pdf" in line.lower():
+    print("Downloaded:", path)
 
-                full = urljoin(BASE, line)
-
-                if full not in pdfs:
-                    pdfs.append(full)
-
-        print("📄 PDFs FOUND:", len(pdfs))
-
-        for link in pdfs:
-
-            try:
-
-                filename = link.split("/")[-1]
-                path = os.path.join(DIR, filename)
-
-                print("⬇ Downloading:", filename)
-
-                r = requests.get(link, timeout=30)
-
-                if r.status_code == 200:
-
-                    with open(path, "wb") as f:
-                        f.write(r.content)
-
-                    downloaded.append({"file": path})
-
-                    print("✅ Saved:", filename)
-
-                else:
-                    print("❌ FAIL:", r.status_code)
-
-            except Exception as e:
-                print("ERROR:", e)
-
-        return downloaded
-
-    except Exception as e:
-        print("SCRAPER ERROR:", e)
-        return []
-
-    finally:
-        driver.quit()
+    return path

@@ -1,46 +1,43 @@
 from app.database import SessionLocal
-from app.models import Stock
+from app.models import StockTrade
 
-from services.stock_scraper import download_all
+from services.stock_scraper import download_latest_pdf
 from services.stock_parser import parse_stock_pdf
 
 
 def process_stocks():
+
     db = SessionLocal()
 
-    print("🔥 STOCK PROCESS START")
+    print("START STOCK PROCESS")
 
-    files = download_all()
-    print("FILES:", files) 
+    pdf_path = download_latest_pdf()
 
-    counter = 0
+    if not pdf_path:
+        return
 
-    for item in files:
-        file_path = item["file"]
+    rows = parse_stock_pdf(pdf_path)
 
-        rows = parse_stock_pdf(file_path)
+    print("ROWS:", len(rows))
 
-        print(f"{file_path} → ROWS:", len(rows))
+    for item in rows:
 
-        for r in rows:
-            try:
-                exists = db.query(Stock).filter(
-                    Stock.company == r["company"],
-                    Stock.date == r["date"]
-                ).first()
+        stock = StockTrade(
+            trade_date=item["trade_date"],
+            board=item["board"],
+            company=item["company"],
+            trade_type=item["trade_type"],
+            price=item["price"],
+            quantity=item["quantity"],
+            plus_value=item["plus_value"],
+            minus_value=item["minus_value"],
+            trades=item["trades"]
+        )
 
-                if exists:
-                    continue
-
-                obj = Stock(**r)
-
-                db.add(obj)
-                counter += 1
-
-            except Exception as e:
-                print("ERROR:", e)
+        db.add(stock)
 
     db.commit()
+
     db.close()
 
-    print("✅ STOCK DONE:", counter)
+    print("DONE")

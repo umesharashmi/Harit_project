@@ -1,56 +1,82 @@
 import pdfplumber
-import uuid
+import re
 from datetime import datetime
 
 
-def parse_stock_pdf(file):
-    results = []
+def parse_stock_pdf(pdf_path):
 
-    with pdfplumber.open(file) as pdf:
+    rows = []
+
+    with pdfplumber.open(pdf_path) as pdf:
+
+        full_text = ""
+
         for page in pdf.pages:
+            full_text += page.extract_text() + "\n"
 
-            text = page.extract_text()
+    # date extract
+    date_match = re.search(r"(\d{2} \w+ \d{4})", full_text)
 
-            if "Share Prices and Trends" not in text:
-                continue
+    trade_date = None
 
-            # extract date
-            date = None
-            for line in text.split("\n"):
-                if "/" in line:
-                    try:
-                        date = datetime.strptime(line.strip(), "%m/%d/%Y").date()
-                        break
-                    except:
-                        continue
+    if date_match:
+        trade_date = datetime.strptime(
+            date_match.group(1),
+            "%d %B %Y"
+        ).date()
 
-            if not date:
-                date = datetime.today().date()
+    lines = full_text.split("\n")
 
-            tables = page.extract_tables()
+    capture = False
 
-            for table in tables:
-                if not table:
-                    continue
+    for line in lines:
 
-                if "Company Name" not in table[0]:
-                    continue
+        # stock section start
+        if "Share Prices and Trends" in line:
+            capture = True
+            continue
 
-                for row in table[1:]:
-                    try:
-                        results.append({
-                            "id": str(uuid.uuid4()),
-                            "date": date,
-                            "board": row[0],
-                            "company": row[1],
-                            "type": row[2],
-                            "price": float(row[3]),
-                            "quantity": int(str(row[4]).replace(",", "")),
-                            "gain": float(row[5]) if row[5] else 0,
-                            "loss": float(row[6]) if row[6] else 0,
-                            "trades": int(row[7])
-                        })
-                    except:
-                        continue
+        if not capture:
+            continue
 
-    return results
+        parts = line.split()
+
+        # skip invalid rows
+        if len(parts) < 8:
+            continue
+
+        try:
+
+            board = parts[0]
+
+            # company name detect
+            company = " ".join(parts[1:-6])
+
+            trade_type = parts[-6]
+
+            price = float(parts[-5].replace(",", ""))
+
+            quantity = int(parts[-4].replace(",", ""))
+
+            plus_value = float(parts[-3])
+
+            minus_value = float(parts[-2])
+
+            trades = int(parts[-1])
+
+            rows.append({
+                "trade_date": trade_date,
+                "board": board,
+                "company": company,
+                "trade_type": trade_type,
+                "price": price,
+                "quantity": quantity,
+                "plus_value": plus_value,
+                "minus_value": minus_value,
+                "trades": trades
+            })
+
+        except:
+            pass
+
+    return rows

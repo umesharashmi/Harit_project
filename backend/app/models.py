@@ -43,20 +43,21 @@ class CountryArrival(Base):
 
     total = Column(Integer)
 
-class Stock(Base):
-    __tablename__ = "stocks"
+class StockTrade(Base):
+    __tablename__ = "stock_trades"
 
-    id = Column(String, primary_key=True)
-    date = Column(Date)
+    id = Column(Integer, primary_key=True, index=True)
+
+    trade_date = Column(Date)
 
     board = Column(String)
     company = Column(String)
-    type = Column(String)
+    trade_type = Column(String)
 
     price = Column(Float)
     quantity = Column(Integer)
 
-    gain = Column(Float)   # +
-    loss = Column(Float)   # -
+    plus_value = Column(Float)
+    minus_value = Column(Float)
 
     trades = Column(Integer)
