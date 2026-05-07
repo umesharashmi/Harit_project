@@ -23,7 +23,9 @@ def extract_pdf_url(page):
 
     try:
 
-        # get all links
+        print("🔍 Searching PDF links...")
+
+        # get all anchor tags
         links = page.locator("a")
 
         count = links.count()
@@ -39,16 +41,19 @@ def extract_pdf_url(page):
 
                 print(f"{i} | TEXT: {text} | HREF: {href}")
 
-                # check for pdf
+                # find pdf
                 if href and ".pdf" in href.lower():
 
+                    # relative -> absolute
                     if href.startswith("/"):
 
                         href = "https://www.cse.lk" + href
 
+                    print("✅ PDF FOUND:", href)
+
                     return href
 
-            except:
+            except Exception:
                 pass
 
         return None
@@ -67,31 +72,41 @@ def get_latest_pdf():
     with sync_playwright() as p:
 
         browser = p.chromium.launch(
-            headless=False
+            headless=True,
+            args=[
+                "--no-sandbox",
+                "--disable-dev-shm-usage"
+            ]
         )
 
         page = browser.new_page(
-            user_agent="Mozilla/5.0"
+            user_agent=(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/122.0.0.0 Safari/537.36"
+            )
         )
 
         try:
 
             print("🌐 Opening page...")
 
-            page.goto(URL, timeout=60000)
+            page.goto(
+                URL,
+                timeout=60000,
+                wait_until="domcontentloaded"
+            )
 
-            page.wait_for_load_state("domcontentloaded")
-
-            # extra wait for JS rendering
+            # wait JS rendering
             page.wait_for_timeout(10000)
 
-            # debug screenshot
+            # screenshot for debugging
             page.screenshot(
                 path="debug.png",
                 full_page=True
             )
 
-            print("📸 Screenshot saved: debug.png")
+            print("📸 Screenshot saved")
 
             pdf_url = extract_pdf_url(page)
 
@@ -115,7 +130,11 @@ def get_latest_pdf():
                 pdf_url,
                 timeout=60,
                 headers={
-                    "User-Agent": "Mozilla/5.0"
+                    "User-Agent": (
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/122.0.0.0 Safari/537.36"
+                    )
                 }
             )
 
