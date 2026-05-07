@@ -4,7 +4,7 @@ import requests
 SAVE_DIR = "pdfs/stocks"
 
 # ⚡ (Most cases CSE uses backend JSON endpoint like this pattern)
-API_URL = "https://www.cse.lk/api/publications/cse-daily"
+API_URL = "https://www.cse.lk/publications/cse-daily"
 
 
 def download_latest_pdf_api():
