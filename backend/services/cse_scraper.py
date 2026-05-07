@@ -19,55 +19,11 @@ def clean_old_pdfs():
     print("🧹 Old PDFs removed")
 
 
-def extract_pdf_url(page):
-
-    try:
-
-        print("🔍 Searching PDF links...")
-
-        # get all anchor tags
-        links = page.locator("a")
-
-        count = links.count()
-
-        print("🔗 TOTAL LINKS FOUND:", count)
-
-        for i in range(count):
-
-            try:
-
-                href = links.nth(i).get_attribute("href")
-                text = links.nth(i).inner_text().strip()
-
-                print(f"{i} | TEXT: {text} | HREF: {href}")
-
-                # find pdf
-                if href and ".pdf" in href.lower():
-
-                    # relative -> absolute
-                    if href.startswith("/"):
-
-                        href = "https://www.cse.lk" + href
-
-                    print("✅ PDF FOUND:", href)
-
-                    return href
-
-            except Exception:
-                pass
-
-        return None
-
-    except Exception as e:
-
-        print("❌ EXTRACT ERROR:", str(e))
-
-        return None
-
-
 def get_latest_pdf():
 
     os.makedirs(DIR, exist_ok=True)
+
+    found_pdf = None
 
     with sync_playwright() as p:
 
@@ -87,6 +43,21 @@ def get_latest_pdf():
             )
         )
 
+        # capture network responses
+        def handle_response(response):
+
+            nonlocal found_pdf
+
+            url = response.url
+
+            if ".pdf" in url.lower():
+
+                print("✅ PDF FOUND:", url)
+
+                found_pdf = url
+
+        page.on("response", handle_response)
+
         try:
 
             print("🌐 Opening page...")
@@ -94,13 +65,12 @@ def get_latest_pdf():
             page.goto(
                 URL,
                 timeout=60000,
-                wait_until="domcontentloaded"
+                wait_until="networkidle"
             )
 
-            # wait JS rendering
+            # wait extra time
             page.wait_for_timeout(10000)
 
-            # screenshot for debugging
             page.screenshot(
                 path="debug.png",
                 full_page=True
@@ -108,9 +78,7 @@ def get_latest_pdf():
 
             print("📸 Screenshot saved")
 
-            pdf_url = extract_pdf_url(page)
-
-            if not pdf_url:
+            if not found_pdf:
 
                 print("❌ PDF URL NOT FOUND")
 
@@ -118,7 +86,7 @@ def get_latest_pdf():
 
                 return None
 
-            print("📄 PDF URL:", pdf_url)
+            pdf_url = found_pdf
 
             filename = pdf_url.split("/")[-1]
 
@@ -130,11 +98,7 @@ def get_latest_pdf():
                 pdf_url,
                 timeout=60,
                 headers={
-                    "User-Agent": (
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                        "AppleWebKit/537.36 (KHTML, like Gecko) "
-                        "Chrome/122.0.0.0 Safari/537.36"
-                    )
+                    "User-Agent": "Mozilla/5.0"
                 }
             )
 
@@ -183,18 +147,11 @@ def download_pdf():
     }
 
 
-def download_all():
-
-    result = download_pdf()
-
-    return [result] if result else []
-
-
 if __name__ == "__main__":
 
     print("🔥 START CSE PROCESS")
 
-    result = download_all()
+    result = download_pdf()
 
     if result:
 
