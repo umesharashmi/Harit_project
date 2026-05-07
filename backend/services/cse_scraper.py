@@ -43,18 +43,25 @@ def get_latest_pdf():
             )
         )
 
-        # capture network responses
+        # capture all network responses
         def handle_response(response):
 
             nonlocal found_pdf
 
-            url = response.url
+            try:
 
-            if ".pdf" in url.lower():
+                url = response.url
 
-                print("✅ PDF FOUND:", url)
+                print("🌐 RESPONSE:", url)
 
-                found_pdf = url
+                if ".pdf" in url.lower():
+
+                    print("✅ PDF FOUND:", url)
+
+                    found_pdf = url
+
+            except:
+                pass
 
         page.on("response", handle_response)
 
@@ -68,9 +75,10 @@ def get_latest_pdf():
                 wait_until="networkidle"
             )
 
-            # wait extra time
-            page.wait_for_timeout(10000)
+            # wait extra for JS/API calls
+            page.wait_for_timeout(15000)
 
+            # debug screenshot
             page.screenshot(
                 path="debug.png",
                 full_page=True
@@ -88,6 +96,8 @@ def get_latest_pdf():
 
             pdf_url = found_pdf
 
+            print("📄 PDF URL:", pdf_url)
+
             filename = pdf_url.split("/")[-1]
 
             filepath = os.path.join(DIR, filename)
@@ -98,7 +108,11 @@ def get_latest_pdf():
                 pdf_url,
                 timeout=60,
                 headers={
-                    "User-Agent": "Mozilla/5.0"
+                    "User-Agent": (
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/122.0.0.0 Safari/537.36"
+                    )
                 }
             )
 
@@ -147,11 +161,18 @@ def download_pdf():
     }
 
 
+def download_all():
+
+    result = download_pdf()
+
+    return [result] if result else []
+
+
 if __name__ == "__main__":
 
     print("🔥 START CSE PROCESS")
 
-    result = download_pdf()
+    result = download_all()
 
     if result:
 
