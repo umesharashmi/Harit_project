@@ -10,53 +10,95 @@ DIR = "stock_pdfs"
 
 
 def download_all():
+
     os.makedirs(DIR, exist_ok=True)
 
     headers = {
-        "User-Agent": "Mozilla/5.0"
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/124.0.0.0 Safari/537.36"
+        ),
+        "Accept-Language": "en-US,en;q=0.9"
     }
 
-    response = requests.get(URL, headers=headers)
+    try:
 
-    print("STATUS:", response.status_code)
+        response = requests.get(
+            URL,
+            headers=headers,
+            timeout=30
+        )
 
-    soup = BeautifulSoup(response.text, "html.parser")
+        print("STATUS:", response.status_code)
 
-    pdfs = []
+        if response.status_code != 200:
+            print("FAILED TO LOAD PAGE")
+            return []
 
-    for a in soup.find_all("a", href=True):
+        print("PDF EXISTS:", ".pdf" in response.text.lower())
 
-        href = a["href"]
+        soup = BeautifulSoup(response.text, "html.parser")
 
-        if ".pdf" in href.lower():
+        pdfs = []
 
-            full = urljoin(BASE, href)
+        for a in soup.find_all("a", href=True):
 
-            pdfs.append(full)
+            href = a["href"]
 
-    print("FOUND PDFs:", pdfs)
+            print("FOUND LINK:", href)
 
-    downloaded = []
+            if ".pdf" in href.lower():
 
-    for link in pdfs:
+                full_url = urljoin(BASE, href)
 
-        try:
-            filename = link.split("/")[-1]
+                if full_url not in pdfs:
+                    pdfs.append(full_url)
 
-            path = os.path.join(DIR, filename)
+        print("FOUND PDFs:", pdfs)
 
-            r = requests.get(link, headers=headers)
+        downloaded = []
 
-            with open(path, "wb") as f:
-                f.write(r.content)
+        for link in pdfs:
 
-            downloaded.append({
-                "file": path
-            })
+            try:
 
-            print("DOWNLOADED:", filename)
+                filename = link.split("/")[-1]
 
-        except Exception as e:
-            print("DOWNLOAD ERROR:", e)
+                path = os.path.join(DIR, filename)
 
-    return downloaded
+                print("DOWNLOADING:", link)
+
+                pdf_response = requests.get(
+                    link,
+                    headers=headers,
+                    timeout=30
+                )
+
+                if pdf_response.status_code == 200:
+
+                    with open(path, "wb") as f:
+                        f.write(pdf_response.content)
+
+                    downloaded.append({
+                        "file": path
+                    })
+
+                    print("DOWNLOADED:", filename)
+
+                else:
+                    print(
+                        "PDF DOWNLOAD FAILED:",
+                        pdf_response.status_code
+                    )
+
+            except Exception as e:
+                print("DOWNLOAD ERROR:", e)
+
+        return downloaded
+
+    except Exception as e:
+
+        print("SCRAPER ERROR:", e)
+
+        return []
