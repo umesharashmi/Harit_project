@@ -11,7 +11,7 @@ def process_stocks():
 
     print("START STOCK PROCESS")
 
-    pdf_path = download_latest_pdf()
+    pdf_path = download_latest_pdf_api()
 
     if not pdf_path:
         return
