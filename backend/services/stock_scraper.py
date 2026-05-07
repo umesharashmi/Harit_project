@@ -2,8 +2,8 @@ import requests
 import os
 
 DIR = "stock_pdfs"
-
 API_URL = "https://www.cse.lk/api/cse-publications"
+
 
 def download_all():
 
@@ -13,44 +13,60 @@ def download_all():
         "User-Agent": "Mozilla/5.0"
     }
 
-    r = requests.get(API_URL, headers=headers)
+    try:
+        r = requests.get(API_URL, headers=headers, timeout=30)
 
-    print("STATUS:", r.status_code)
+        print("STATUS:", r.status_code)
 
-    data = r.json()
+        if r.status_code != 200:
+            print("API FAILED")
+            return []
 
-    downloaded = []
+        data = r.json()
 
-    for item in data:
+        # 🔥 SAFE CHECK (important)
+        if isinstance(data, dict):
+            data = data.get("data", [])
 
-        try:
+        downloaded = []
 
-            file_url = item.get("file")
+        for item in data:
 
-            if not file_url:
-                continue
+            try:
 
-            if ".pdf" not in file_url.lower():
-                continue
+                file_url = item.get("file")
 
-            full_url = "https://www.cse.lk" + file_url
+                if not file_url:
+                    continue
 
-            filename = full_url.split("/")[-1]
+                if ".pdf" not in file_url.lower():
+                    continue
 
-            path = os.path.join(DIR, filename)
+                full_url = "https://www.cse.lk" + file_url
 
-            pdf = requests.get(full_url, headers=headers)
+                filename = full_url.split("/")[-1]
+                path = os.path.join(DIR, filename)
 
-            with open(path, "wb") as f:
-                f.write(pdf.content)
+                pdf = requests.get(full_url, headers=headers, timeout=30)
 
-            downloaded.append({
-                "file": path
-            })
+                if pdf.status_code != 200:
+                    print("PDF FAIL:", full_url)
+                    continue
 
-            print("DOWNLOADED:", filename)
+                with open(path, "wb") as f:
+                    f.write(pdf.content)
 
-        except Exception as e:
-            print("ERROR:", e)
+                downloaded.append({
+                    "file": path
+                })
 
-    return downloaded
+                print("DOWNLOADED:", filename)
+
+            except Exception as e:
+                print("ITEM ERROR:", e)
+
+        return downloaded
+
+    except Exception as e:
+        print("REQUEST ERROR:", e)
+        return []
