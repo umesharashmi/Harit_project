@@ -1,5 +1,8 @@
 import os
+import time
 import requests
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
@@ -12,68 +15,62 @@ def download_all():
 
     os.makedirs(DIR, exist_ok=True)
 
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
-
     downloaded = []
 
+    print("🚀 START SELENIUM SCRAPER")
+
+    # 🔥 headless chrome setup
+    options = Options()
+    options.add_argument("--headless=new")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+
+    driver = webdriver.Chrome(options=options)
+
     try:
-        print("🌐 Loading page...")
+        print("🌐 Opening page...")
 
-        r = requests.get(URL, headers=headers, timeout=30)
+        driver.get(URL)
 
-        print("STATUS:", r.status_code)
+        time.sleep(5)  # wait JS load
 
-        if r.status_code != 200:
-            print("FAILED TO LOAD PAGE")
-            return []
+        html = driver.page_source
 
-        soup = BeautifulSoup(r.text, "html.parser")
+        soup = BeautifulSoup(html, "html.parser")
 
         links = []
 
-        # collect all possible links
+        # collect all links
         for a in soup.find_all("a", href=True):
-
             href = a["href"]
+            full = urljoin(BASE, href)
+            links.append(full)
 
-            if href:
-                links.append(urljoin(BASE, href))
-
-        pdfs = []
-
-        for link in links:
-
-            if ".pdf" in link.lower():
-
-                if link not in pdfs:
-                    pdfs.append(link)
+        # filter pdfs
+        pdfs = list(set([l for l in links if ".pdf" in l.lower()]))
 
         print("📄 PDFs FOUND:", len(pdfs))
 
         for link in pdfs:
 
             try:
-
                 filename = link.split("/")[-1]
                 path = os.path.join(DIR, filename)
 
                 print("⬇ Downloading:", filename)
 
-                pdf = requests.get(link, headers=headers, timeout=30)
+                r = requests.get(link, timeout=30)
 
-                if pdf.status_code == 200:
-
+                if r.status_code == 200:
                     with open(path, "wb") as f:
-                        f.write(pdf.content)
+                        f.write(r.content)
 
                     downloaded.append({"file": path})
 
                     print("✅ Saved:", filename)
 
                 else:
-                    print("❌ PDF FAIL:", pdf.status_code)
+                    print("❌ FAIL:", r.status_code)
 
             except Exception as e:
                 print("ERROR:", e)
@@ -83,3 +80,6 @@ def download_all():
     except Exception as e:
         print("SCRAPER ERROR:", e)
         return []
+
+    finally:
+        driver.quit()
