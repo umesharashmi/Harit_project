@@ -13,5 +13,5 @@ psycopg2-binary
 apscheduler
 selenium
 lxml
-webdriver-manage
+webdriver-manager
 playwright
