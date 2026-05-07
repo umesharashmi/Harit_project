@@ -24,10 +24,12 @@ def extract_pdf_url(page):
 
     try:
 
-        # get first download button link
-        link = page.locator("a").filter(has_text="Download").first
+        # find first pdf link directly
+        link = page.locator('a[href*=".pdf"]').first
 
         pdf_url = link.get_attribute("href")
+
+        print("RAW PDF URL:", pdf_url)
 
         if pdf_url and pdf_url.startswith("/"):
 
@@ -35,7 +37,9 @@ def extract_pdf_url(page):
 
         return pdf_url
 
-    except:
+    except Exception as e:
+
+        print("EXTRACT ERROR:", e)
 
         return None
 
@@ -58,6 +62,9 @@ def get_latest_pdf():
 
             # wait page render
             page.wait_for_timeout(5000)
+
+            # debug screenshot
+            page.screenshot(path="debug.png", full_page=True)
 
             pdf_url = extract_pdf_url(page)
 
@@ -131,4 +138,16 @@ def download_all():
 
 if __name__ == "__main__":
 
-    print(download_all())
+    print("🔥 START CSE PROCESS")
+
+    result = download_all()
+
+    if result:
+
+        print("✅ DONE")
+
+    else:
+
+        print("❌ No PDFs found")
+
+    print("✅ STARTUP TASKS DONE")
