@@ -29,6 +29,13 @@ def process_country():
 
         for r in rows:
             try:
+
+                # ✅ SKIP TOTAL ROW (IMPORTANT FIX)
+                country_name = r["country"].strip().lower()
+
+                if "total" in country_name:
+                    continue
+
                 obj = CountryArrival(
                     id=f"{r['country']}_{counter}_{year}",
                     country=r["country"],
