@@ -1,41 +1,39 @@
 import os
 import requests
+from bs4 import BeautifulSoup
 
 SAVE_DIR = "pdfs/stocks"
 
-# ⚡ (Most cases CSE uses backend JSON endpoint like this pattern)
-API_URL = "https://www.cse.lk/publications/cse-daily"
+URL = "https://www.cse.lk/publications/cse-daily"
 
 
-def download_latest_pdf_api():
+def download_latest_pdf():
 
     os.makedirs(SAVE_DIR, exist_ok=True)
 
     headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json"
+        "User-Agent": "Mozilla/5.0"
     }
 
-    res = requests.get(API_URL, headers=headers)
+    res = requests.get(URL, headers=headers)
 
     if res.status_code != 200:
-        print("API ERROR:", res.status_code)
+        print("REQUEST FAILED:", res.status_code)
         return None
 
-    data = res.json()
+    soup = BeautifulSoup(res.text, "html.parser")
 
-    # 🔍 assume API returns list of files
     pdf_url = None
 
-    for item in data.get("data", []):
-        file_url = item.get("fileUrl") or item.get("url")
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
 
-        if file_url and file_url.lower().endswith(".pdf"):
-            pdf_url = file_url
+        if ".pdf" in href.lower():
+            pdf_url = requests.compat.urljoin(URL, href)
             break
 
     if not pdf_url:
-        print("NO PDF FOUND FROM API")
+        print("NO PDF FOUND")
         return None
 
     filename = pdf_url.split("/")[-1]
