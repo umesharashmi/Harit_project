@@ -35,7 +35,7 @@ def get_latest_pdf():
             ]
         )
 
-        page = browser.new_page(
+        context = browser.new_context(
             user_agent=(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -43,7 +43,9 @@ def get_latest_pdf():
             )
         )
 
-        # capture all network responses
+        page = context.new_page()
+
+        # capture PDF responses
         def handle_response(response):
 
             nonlocal found_pdf
@@ -51,8 +53,6 @@ def get_latest_pdf():
             try:
 
                 url = response.url
-
-                print("🌐 RESPONSE:", url)
 
                 if ".pdf" in url.lower():
 
@@ -75,16 +75,46 @@ def get_latest_pdf():
                 wait_until="networkidle"
             )
 
-            # wait extra for JS/API calls
+            # wait for JS/API calls
             page.wait_for_timeout(15000)
 
-            # debug screenshot
+            # save screenshot
             page.screenshot(
                 path="debug.png",
                 full_page=True
             )
 
             print("📸 Screenshot saved")
+
+            # fallback: search all links manually
+            if not found_pdf:
+
+                links = page.locator("a")
+
+                count = links.count()
+
+                print("🔗 TOTAL LINKS:", count)
+
+                for i in range(count):
+
+                    try:
+
+                        href = links.nth(i).get_attribute("href")
+
+                        print(f"{i} => {href}")
+
+                        if href and ".pdf" in href.lower():
+
+                            if href.startswith("/"):
+
+                                href = "https://www.cse.lk" + href
+
+                            found_pdf = href
+
+                            break
+
+                    except:
+                        pass
 
             if not found_pdf:
 
@@ -94,18 +124,16 @@ def get_latest_pdf():
 
                 return None
 
-            pdf_url = found_pdf
+            print("📄 PDF URL:", found_pdf)
 
-            print("📄 PDF URL:", pdf_url)
-
-            filename = pdf_url.split("/")[-1]
+            filename = found_pdf.split("/")[-1]
 
             filepath = os.path.join(DIR, filename)
 
             print("⬇️ Downloading PDF...")
 
             response = requests.get(
-                pdf_url,
+                found_pdf,
                 timeout=60,
                 headers={
                     "User-Agent": (
