@@ -11,4 +11,6 @@ pdfplumber
 pandas
 psycopg2-binary
 apscheduler
-playwright
+selenium
+lxml
+webdriver-manager
