@@ -16,14 +16,13 @@ def process_cse():
         print("❌ No PDFs found")
         return
 
-    # clear old DB data
+    # ⚠️ optional: clear old data
     db.query(CorporateDebtMovement).delete()
     db.commit()
 
     counter = 0
 
     for item in files:
-
         file_path = item["file"]
 
         print("📊 PROCESSING:", file_path)

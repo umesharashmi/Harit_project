@@ -14,18 +14,16 @@ def clean_int(x):
     try:
         if x is None or x == "":
             return None
-        return None
         return int(str(x).replace(",", "").strip())
     except:
         return None
 
 
-def parse_corporate_debt(file):
+def parse_corporate_debt(file_path):
     rows = []
 
-    with pdfplumber.open(file) as pdf:
+    with pdfplumber.open(file_path) as pdf:
         for page in pdf.pages:
-
             tables = page.extract_tables()
 
             for table in tables:
@@ -34,7 +32,7 @@ def parse_corporate_debt(file):
                     if not row:
                         continue
 
-                    text = str(row).lower()
+                    text = " ".join([str(i) for i in row]).lower()
 
                     # skip headers
                     if "industry" in text or "company" in text:

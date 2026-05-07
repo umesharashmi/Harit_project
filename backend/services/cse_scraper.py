@@ -6,88 +6,85 @@ URL = "https://www.cse.lk/publications/cse-daily"
 DIR = "cse_pdfs"
 
 
-# ✅ 1. delete only old PDFs (keep folder)
 def clean_old_pdfs():
     os.makedirs(DIR, exist_ok=True)
 
-    for file in os.listdir(DIR):
-        if file.lower().endswith(".pdf"):
-            os.remove(os.path.join(DIR, file))
+    for f in os.listdir(DIR):
+        if f.endswith(".pdf"):
+            os.remove(os.path.join(DIR, f))
 
-    print("🧹 Old PDF files removed (folder kept)")
+    print("🧹 Old PDFs removed")
 
 
-# ✅ 2. get PDF links (FINAL FIX)
-def get_pdf_links():
-    pdf_links = []
+def get_latest_pdf():
+    pdf_url = None
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
 
+        def handle_response(response):
+            nonlocal pdf_url
+
+            url = response.url
+            content_type = response.headers.get("content-type", "")
+
+            if "application/pdf" in content_type or ".pdf" in url.lower():
+                pdf_url = url
+                print("✅ FOUND PDF:", pdf_url)
+
+        page.on("response", handle_response)
+
         page.goto(URL, timeout=60000)
 
-        # wait until content loads
+        page.wait_for_selector("text=Download", timeout=15000)
+
+        # latest first
+        page.locator("text=Download").first.click()
+
         page.wait_for_timeout(5000)
-
-        # 🔥 get all hrefs
-        links = page.eval_on_selector_all(
-            "a",
-            "els => els.map(e => e.href)"
-        )
-
-        for link in links:
-            if link and ".pdf" in link.lower():
-                pdf_links.append(link)
 
         browser.close()
 
-    # remove duplicates
-    pdf_links = list(set(pdf_links))
-
-    # sort latest first
-    pdf_links.sort(reverse=True)
-
-    return pdf_links[:1]   # 🔥 latest PDF only (06 May 2026)
+    return pdf_url
 
 
-# ✅ 3. download PDFs
-def download_all():
+def download_pdf():
     clean_old_pdfs()
 
-    files = []
+    link = get_latest_pdf()
 
-    links = get_pdf_links()
-    print("📄 FOUND LINKS:", links)
+    if not link:
+        print("❌ PDF NOT FOUND")
+        return None
 
-    if not links:
-        print("❌ No PDF links found")
-        return files
+    try:
+        name = link.split("/")[-1].split("?")[0]
+        path = os.path.join(DIR, name)
 
-    for link in links:
-        try:
-            name = link.split("/")[-1].split("?")[0]
-            path = os.path.join(DIR, name)
+        r = requests.get(link, timeout=30)
+        r.raise_for_status()
 
-            r = requests.get(link)
+        with open(path, "wb") as f:
+            f.write(r.content)
 
-            if r.status_code != 200:
-                print("❌ Failed:", link)
-                continue
+        print("✅ DOWNLOADED:", name)
+        return path
 
-            with open(path, "wb") as f:
-                f.write(r.content)
-
-            print(f"✅ Downloaded: {name}")
-
-            files.append({
-                "file": path,
-                "name": name
-            })
-
-        except Exception as e:
-            print("⚠️ DOWNLOAD ERROR:", e)
-
-    return files
+    except Exception as e:
+        print("⚠️ DOWNLOAD ERROR:", e)
+        return None
 
 
+def download_all():
+    file_path = download_pdf()
+
+    if not file_path:
+        return []
+
+    return [
+        {
+            "file": file_path,
+            "name": file_path.split("/")[-1]
+        }
+    ]
