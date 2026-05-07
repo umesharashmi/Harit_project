@@ -1,72 +1,74 @@
-import requests
 import os
+import requests
+from playwright.sync_api import sync_playwright
+from urllib.parse import urljoin
 
+BASE = "https://www.cse.lk"
+URL = "https://www.cse.lk/publications/cse-daily"
 DIR = "stock_pdfs"
-API_URL = "https://www.cse.lk/api/cse-publications"
 
 
 def download_all():
 
     os.makedirs(DIR, exist_ok=True)
 
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
+    downloaded = []
 
-    try:
-        r = requests.get(API_URL, headers=headers, timeout=30)
+    with sync_playwright() as p:
 
-        print("STATUS:", r.status_code)
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
 
-        if r.status_code != 200:
-            print("API FAILED")
-            return []
+        print("🌐 Loading page...")
 
-        data = r.json()
+        page.goto(URL, timeout=60000)
+        page.wait_for_timeout(5000)
 
-        # 🔥 SAFE CHECK (important)
-        if isinstance(data, dict):
-            data = data.get("data", [])
+        links = page.locator("a").evaluate_all(
+            "els => els.map(e => e.href)"
+        )
 
-        downloaded = []
+        pdfs = []
 
-        for item in data:
+        for link in links:
+
+            if link and ".pdf" in link.lower():
+
+                full = urljoin(BASE, link)
+
+                if full not in pdfs:
+                    pdfs.append(full)
+
+        print("📄 PDFs FOUND:", len(pdfs))
+
+        for link in pdfs:
 
             try:
 
-                file_url = item.get("file")
-
-                if not file_url:
-                    continue
-
-                if ".pdf" not in file_url.lower():
-                    continue
-
-                full_url = "https://www.cse.lk" + file_url
-
-                filename = full_url.split("/")[-1]
+                filename = link.split("/")[-1]
                 path = os.path.join(DIR, filename)
 
-                pdf = requests.get(full_url, headers=headers, timeout=30)
+                print("⬇ Downloading:", filename)
 
-                if pdf.status_code != 200:
-                    print("PDF FAIL:", full_url)
-                    continue
+                r = requests.get(link, timeout=30)
 
-                with open(path, "wb") as f:
-                    f.write(pdf.content)
+                if r.status_code == 200:
 
-                downloaded.append({
-                    "file": path
-                })
+                    with open(path, "wb") as f:
+                        f.write(r.content)
 
-                print("DOWNLOADED:", filename)
+                    downloaded.append({
+                        "file": path
+                    })
+
+                    print("✅ Saved:", filename)
+
+                else:
+                    print("❌ Failed:", r.status_code)
 
             except Exception as e:
-                print("ITEM ERROR:", e)
+                print("ERROR:", e)
 
-        return downloaded
+        browser.close()
 
-    except Exception as e:
-        print("REQUEST ERROR:", e)
-        return []
+    return downloaded
