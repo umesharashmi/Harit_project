@@ -1,5 +1,6 @@
 import os
 import requests
+
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
@@ -13,31 +14,44 @@ def download_latest_pdf():
 
     os.makedirs(SAVE_DIR, exist_ok=True)
 
-    soup = BeautifulSoup(requests.get(URL).text, "html.parser")
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
 
-    pdf_url = None
+    response = requests.get(URL, headers=headers)
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    pdf_links = []
 
     for a in soup.find_all("a"):
 
         href = a.get("href", "")
 
-        if ".pdf" in href:
+        if ".pdf" in href.lower():
 
-            pdf_url = urljoin(BASE, href)
-            break
+            full_url = urljoin(BASE, href)
 
-    if not pdf_url:
+            pdf_links.append(full_url)
+
+    print("PDF LINKS:", pdf_links)
+
+    if not pdf_links:
+
         print("No PDF found")
         return None
+
+    # latest pdf
+    pdf_url = pdf_links[0]
 
     filename = pdf_url.split("/")[-1]
 
     path = os.path.join(SAVE_DIR, filename)
 
-    response = requests.get(pdf_url)
+    pdf = requests.get(pdf_url, headers=headers)
 
     with open(path, "wb") as f:
-        f.write(response.content)
+        f.write(pdf.content)
 
     print("Downloaded:", path)
 
