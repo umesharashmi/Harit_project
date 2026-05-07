@@ -3,7 +3,6 @@ import time
 import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
 BASE = "https://www.cse.lk"
@@ -19,41 +18,45 @@ def download_all():
 
     print("🚀 START SELENIUM SCRAPER")
 
-    # 🔥 headless chrome setup
+    # 🔥 Chrome setup (IMPORTANT FIXED)
     options = Options()
     options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
 
     driver = webdriver.Chrome(options=options)
 
     try:
+
         print("🌐 Opening page...")
 
         driver.get(URL)
 
-        time.sleep(5)  # wait JS load
+        # better than fixed sleep
+        time.sleep(8)
 
+        # full rendered HTML
         html = driver.page_source
 
-        soup = BeautifulSoup(html, "html.parser")
+        pdfs = []
 
-        links = []
+        # extract PDF links directly (better logic)
+        for line in html.split('"'):
 
-        # collect all links
-        for a in soup.find_all("a", href=True):
-            href = a["href"]
-            full = urljoin(BASE, href)
-            links.append(full)
+            if ".pdf" in line.lower():
 
-        # filter pdfs
-        pdfs = list(set([l for l in links if ".pdf" in l.lower()]))
+                full = urljoin(BASE, line)
+
+                if full not in pdfs:
+                    pdfs.append(full)
 
         print("📄 PDFs FOUND:", len(pdfs))
 
         for link in pdfs:
 
             try:
+
                 filename = link.split("/")[-1]
                 path = os.path.join(DIR, filename)
 
@@ -62,6 +65,7 @@ def download_all():
                 r = requests.get(link, timeout=30)
 
                 if r.status_code == 200:
+
                     with open(path, "wb") as f:
                         f.write(r.content)
 
