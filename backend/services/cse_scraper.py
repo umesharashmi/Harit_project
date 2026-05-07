@@ -1,7 +1,6 @@
 from playwright.sync_api import sync_playwright
 import requests
 import os
-import re
 
 URL = "https://www.cse.lk/publications/cse-daily"
 DIR = "cse_pdfs"
@@ -24,22 +23,39 @@ def extract_pdf_url(page):
 
     try:
 
-        # find first pdf link directly
-        link = page.locator('a[href*=".pdf"]').first
+        # get all links
+        links = page.locator("a")
 
-        pdf_url = link.get_attribute("href")
+        count = links.count()
 
-        print("RAW PDF URL:", pdf_url)
+        print("🔗 TOTAL LINKS FOUND:", count)
 
-        if pdf_url and pdf_url.startswith("/"):
+        for i in range(count):
 
-            pdf_url = "https://www.cse.lk" + pdf_url
+            try:
 
-        return pdf_url
+                href = links.nth(i).get_attribute("href")
+                text = links.nth(i).inner_text().strip()
+
+                print(f"{i} | TEXT: {text} | HREF: {href}")
+
+                # check for pdf
+                if href and ".pdf" in href.lower():
+
+                    if href.startswith("/"):
+
+                        href = "https://www.cse.lk" + href
+
+                    return href
+
+            except:
+                pass
+
+        return None
 
     except Exception as e:
 
-        print("EXTRACT ERROR:", e)
+        print("❌ EXTRACT ERROR:", str(e))
 
         return None
 
@@ -50,21 +66,32 @@ def get_latest_pdf():
 
     with sync_playwright() as p:
 
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(
+            headless=False
+        )
 
-        page = browser.new_page()
-
-        page.goto(URL, timeout=60000)
-
-        page.wait_for_load_state("networkidle")
+        page = browser.new_page(
+            user_agent="Mozilla/5.0"
+        )
 
         try:
 
-            # wait page render
-            page.wait_for_timeout(5000)
+            print("🌐 Opening page...")
+
+            page.goto(URL, timeout=60000)
+
+            page.wait_for_load_state("domcontentloaded")
+
+            # extra wait for JS rendering
+            page.wait_for_timeout(10000)
 
             # debug screenshot
-            page.screenshot(path="debug.png", full_page=True)
+            page.screenshot(
+                path="debug.png",
+                full_page=True
+            )
+
+            print("📸 Screenshot saved: debug.png")
 
             pdf_url = extract_pdf_url(page)
 
@@ -82,7 +109,15 @@ def get_latest_pdf():
 
             filepath = os.path.join(DIR, filename)
 
-            response = requests.get(pdf_url, timeout=60)
+            print("⬇️ Downloading PDF...")
+
+            response = requests.get(
+                pdf_url,
+                timeout=60,
+                headers={
+                    "User-Agent": "Mozilla/5.0"
+                }
+            )
 
             if response.status_code != 200:
 
