@@ -1,53 +1,40 @@
 import os
-import time
 import requests
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
 
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.service import Service
-
+BASE = "https://www.cse.lk"
+URL = BASE + "/pages/market-reports/market-reports.component.html"
 
 SAVE_DIR = "pdfs/stocks"
-
-URL = "https://www.cse.lk/publications/cse-daily"
 
 
 def download_latest_pdf():
 
     os.makedirs(SAVE_DIR, exist_ok=True)
 
-    options = webdriver.ChromeOptions()
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
 
-    options.add_argument("--headless")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
+    response = requests.get(URL, headers=headers)
 
-    driver = webdriver.Chrome(
-        service=Service(ChromeDriverManager().install()),
-        options=options
-    )
+    print(response.status_code)
 
-    driver.get(URL)
-
-    time.sleep(5)
-
-    links = driver.find_elements(By.TAG_NAME, "a")
+    soup = BeautifulSoup(response.text, "html.parser")
 
     pdf_url = None
 
-    for link in links:
+    for a in soup.find_all("a", href=True):
 
-        href = link.get_attribute("href")
+        href = a["href"]
 
         print(href)
 
-        if href and ".pdf" in href.lower():
+        if ".pdf" in href.lower():
 
-            pdf_url = href
+            pdf_url = urljoin(BASE, href)
             break
-
-    driver.quit()
 
     if not pdf_url:
 
@@ -58,10 +45,10 @@ def download_latest_pdf():
 
     path = os.path.join(SAVE_DIR, filename)
 
-    response = requests.get(pdf_url)
+    pdf = requests.get(pdf_url, headers=headers)
 
     with open(path, "wb") as f:
-        f.write(response.content)
+        f.write(pdf.content)
 
     print("✅ DOWNLOADED:", path)
 
