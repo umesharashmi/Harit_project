@@ -1,43 +1,28 @@
-from app.database import SessionLocal
-from app.models import StockTrade
-
 from services.stock_scraper import download_latest_pdf
-from services.stock_parser import parse_stock_pdf
+
+from services.stock_parser import parse_and_save_corporate_debt
 
 
 def process_stocks():
 
-    db = SessionLocal()
+    try:
 
-    print("START STOCK PROCESS")
+        print("📥 DOWNLOADING PDF...")
 
-    pdf_path = download_latest_pdf()
+        pdf_path = download_latest_pdf()
 
-    if not pdf_path:
-        return
+        if not pdf_path:
 
-    rows = parse_stock_pdf(pdf_path)
+            print("❌ DOWNLOAD FAILED")
 
-    print("ROWS:", len(rows))
+            return
 
-    for item in rows:
+        print("📄 PARSING PDF...")
 
-        stock = StockTrade(
-            trade_date=item["trade_date"],
-            board=item["board"],
-            company=item["company"],
-            trade_type=item["trade_type"],
-            price=item["price"],
-            quantity=item["quantity"],
-            plus_value=item["plus_value"],
-            minus_value=item["minus_value"],
-            trades=item["trades"]
-        )
+        parse_and_save_corporate_debt(pdf_path)
 
-        db.add(stock)
+        print("✅ STOCK PROCESS COMPLETED")
 
-    db.commit()
+    except Exception as e:
 
-    db.close()
-
-    print("DONE")
+        print("❌ STOCK PROCESS ERROR:", e)
