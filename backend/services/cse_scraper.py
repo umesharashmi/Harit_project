@@ -1,6 +1,7 @@
 from playwright.sync_api import sync_playwright
 import requests
 import os
+import re
 
 URL = "https://www.cse.lk/publications/cse-daily"
 DIR = "cse_pdfs"
@@ -19,6 +20,16 @@ def clean_old_pdfs():
     print("🧹 Old PDFs removed")
 
 
+def extract_pdf_url(html):
+
+    matches = re.findall(r'https://[^\s"\']+\.pdf', html)
+
+    if matches:
+        return matches[0]
+
+    return None
+
+
 def get_latest_pdf():
 
     os.makedirs(DIR, exist_ok=True)
@@ -35,38 +46,27 @@ def get_latest_pdf():
 
         try:
 
-            # FIRST DOWNLOAD BUTTON
-            btn = page.locator("a:has-text('Download')").first
+            # wait page render
+            page.wait_for_timeout(5000)
 
-            # GET PDF URL
-            href = btn.get_attribute("href")
+            html = page.content()
 
-            if not href:
-                print("❌ No href found")
+            pdf_url = extract_pdf_url(html)
+
+            if not pdf_url:
+
+                print("❌ PDF URL NOT FOUND")
+
                 browser.close()
+
                 return None
-
-            # HANDLE RELATIVE URL
-            if href.startswith("/"):
-
-                pdf_url = "https://www.cse.lk" + href
-
-            else:
-
-                pdf_url = href
 
             print("📄 PDF URL:", pdf_url)
 
-            # FILE NAME
             filename = pdf_url.split("/")[-1]
-
-            if not filename.endswith(".pdf"):
-
-                filename = "latest_cse_daily.pdf"
 
             filepath = os.path.join(DIR, filename)
 
-            # DOWNLOAD PDF
             response = requests.get(pdf_url, timeout=60)
 
             if response.status_code != 200:
