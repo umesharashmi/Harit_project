@@ -1,6 +1,7 @@
 from playwright.sync_api import sync_playwright
 import requests
 import os
+import re
 
 URL = "https://www.cse.lk/publications/cse-daily"
 DIR = "cse_pdfs"
@@ -14,9 +15,37 @@ def clean_old_pdfs():
 
         if f.endswith(".pdf"):
 
-            os.remove(os.path.join(DIR, f))
+            try:
+                os.remove(os.path.join(DIR, f))
+            except:
+                pass
 
     print("🧹 Old PDFs removed")
+
+
+def extract_pdf_from_html(html):
+
+    try:
+
+        matches = re.findall(
+            r'https://[^\s"\']+\.pdf',
+            html,
+            re.IGNORECASE
+        )
+
+        if matches:
+
+            print("✅ PDF FOUND IN HTML")
+
+            return matches[0]
+
+        return None
+
+    except Exception as e:
+
+        print("❌ HTML EXTRACT ERROR:", str(e))
+
+        return None
 
 
 def get_latest_pdf():
@@ -31,11 +60,16 @@ def get_latest_pdf():
             headless=True,
             args=[
                 "--no-sandbox",
-                "--disable-dev-shm-usage"
+                "--disable-dev-shm-usage",
+                "--disable-blink-features=AutomationControlled"
             ]
         )
 
         context = browser.new_context(
+            viewport={
+                "width": 1920,
+                "height": 1080
+            },
             user_agent=(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -45,7 +79,7 @@ def get_latest_pdf():
 
         page = context.new_page()
 
-        # capture PDF responses
+        # capture network responses
         def handle_response(response):
 
             nonlocal found_pdf
@@ -54,9 +88,11 @@ def get_latest_pdf():
 
                 url = response.url
 
+                print("🌐 RESPONSE:", url)
+
                 if ".pdf" in url.lower():
 
-                    print("✅ PDF FOUND:", url)
+                    print("✅ PDF FOUND IN NETWORK:", url)
 
                     found_pdf = url
 
@@ -75,7 +111,7 @@ def get_latest_pdf():
                 wait_until="networkidle"
             )
 
-            # wait for JS/API calls
+            # wait for JS rendering
             page.wait_for_timeout(15000)
 
             # save screenshot
@@ -86,8 +122,18 @@ def get_latest_pdf():
 
             print("📸 Screenshot saved")
 
-            # fallback: search all links manually
+            # get html
+            html = page.content()
+
+            # try html extract
             if not found_pdf:
+
+                found_pdf = extract_pdf_from_html(html)
+
+            # fallback: check all links
+            if not found_pdf:
+
+                print("🔍 Checking all links...")
 
                 links = page.locator("a")
 
@@ -101,7 +147,9 @@ def get_latest_pdf():
 
                         href = links.nth(i).get_attribute("href")
 
-                        print(f"{i} => {href}")
+                        text = links.nth(i).inner_text().strip()
+
+                        print(f"{i} | TEXT: {text} | HREF: {href}")
 
                         if href and ".pdf" in href.lower():
 
@@ -110,6 +158,8 @@ def get_latest_pdf():
                                 href = "https://www.cse.lk" + href
 
                             found_pdf = href
+
+                            print("✅ PDF FOUND IN LINKS:", found_pdf)
 
                             break
 
@@ -124,7 +174,7 @@ def get_latest_pdf():
 
                 return None
 
-            print("📄 PDF URL:", found_pdf)
+            print("📄 FINAL PDF URL:", found_pdf)
 
             filename = found_pdf.split("/")[-1]
 
@@ -205,6 +255,8 @@ if __name__ == "__main__":
     if result:
 
         print("✅ DONE")
+
+        print(result)
 
     else:
 
