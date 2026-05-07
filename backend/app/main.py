@@ -8,7 +8,7 @@ from app.auth_routes import router as auth_router
 
 from services.processor import process_all
 from services.tourism_processor import process_country
-from services.stock_processor import process_stocks
+
 
 from scheduler import start_scheduler
 
@@ -53,7 +53,7 @@ def startup_event():
             print("⏳ Processing data...")
             process_all()
             process_country()
-            process_stocks()
+           
             print("✅ STARTUP TASKS DONE")
         except Exception as e:
             print("❌ STARTUP ERROR:", e)
