@@ -1,58 +1,66 @@
 import os
+import time
 import requests
 
-from bs4 import BeautifulSoup
-from urllib.parse import urljoin
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
 
-BASE = "https://www.cse.lk"
-URL = BASE + "/publications/cse-daily"
 
 SAVE_DIR = "pdfs/stocks"
+
+URL = "https://www.cse.lk/publications/cse-daily"
 
 
 def download_latest_pdf():
 
     os.makedirs(SAVE_DIR, exist_ok=True)
 
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
+    options = webdriver.ChromeOptions()
 
-    response = requests.get(URL, headers=headers)
+    options.add_argument("--headless")
 
-    soup = BeautifulSoup(response.text, "html.parser")
+    driver = webdriver.Chrome(
+        service=Service(ChromeDriverManager().install()),
+        options=options
+    )
 
-    pdf_links = []
+    driver.get(URL)
 
-    for a in soup.find_all("a"):
+    time.sleep(5)
 
-        href = a.get("href", "")
+    links = driver.find_elements(By.TAG_NAME, "a")
 
-        if ".pdf" in href.lower():
+    pdf_url = None
 
-            full_url = urljoin(BASE, href)
+    for link in links:
 
-            pdf_links.append(full_url)
+        href = link.get_attribute("href")
 
-    print("PDF LINKS:", pdf_links)
+        print(href)
 
-    if not pdf_links:
+        if href and ".pdf" in href.lower():
 
-        print("No PDF found")
+            pdf_url = href
+            break
+
+    driver.quit()
+
+    if not pdf_url:
+
+        print("NO PDF FOUND")
         return None
-
-    # latest pdf
-    pdf_url = pdf_links[0]
 
     filename = pdf_url.split("/")[-1]
 
     path = os.path.join(SAVE_DIR, filename)
 
-    pdf = requests.get(pdf_url, headers=headers)
+    response = requests.get(pdf_url)
 
     with open(path, "wb") as f:
-        f.write(pdf.content)
+        f.write(response.content)
 
-    print("Downloaded:", path)
+    print("✅ DOWNLOADED:", path)
 
     return path
