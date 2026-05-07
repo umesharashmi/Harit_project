@@ -22,6 +22,7 @@ def download_latest_pdf():
     print(response.status_code)
 
     soup = BeautifulSoup(response.text, "html.parser")
+    print(soup.text)
 
     pdf_url = None
 
