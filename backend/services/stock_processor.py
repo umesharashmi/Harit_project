@@ -1,7 +1,7 @@
 from app.database import SessionLocal
 from app.models import StockTrade
 
-from services.stock_scraper import download_latest_pdf_api
+from services.stock_scraper import download_latest_pdf
 from services.stock_parser import parse_stock_pdf
 
 
@@ -11,7 +11,7 @@ def process_stocks():
 
     print("START STOCK PROCESS")
 
-    pdf_path = download_latest_pdf_api()
+    pdf_path = download_latest_pdf()
 
     if not pdf_path:
         return
