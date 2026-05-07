@@ -1,56 +1,39 @@
-import requests
-import os
+import requests, os
+from bs4 import BeautifulSoup
 
-DIR = "stock_pdfs"
-
-API_URL = "https://www.cse.lk/api/cse-publications"
+BASE = "https://www.harti.gov.lk/daily-price.php"
+DIR = "pdfs"
 
 def download_all():
-
     os.makedirs(DIR, exist_ok=True)
 
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
+    soup = BeautifulSoup(requests.get(BASE).text, "html.parser")
 
-    r = requests.get(API_URL, headers=headers)
+    links = []
+    for a in soup.find_all("a"):
+        if a.get("href") and ".pdf" in a.get("href"):
+            links.append("https://www.harti.gov.lk/" + a.get("href"))
 
-    print("STATUS:", r.status_code)
+    links = links[:7]
 
-    data = r.json()
+    files = []
 
-    downloaded = []
+    for url in links:
+        name = url.split("/")[-1]
+        path = f"{DIR}/{name}"
 
-    for item in data:
-
-        try:
-
-            file_url = item.get("file")
-
-            if not file_url:
-                continue
-
-            if ".pdf" not in file_url.lower():
-                continue
-
-            full_url = "https://www.cse.lk" + file_url
-
-            filename = full_url.split("/")[-1]
-
-            path = os.path.join(DIR, filename)
-
-            pdf = requests.get(full_url, headers=headers)
-
+        if not os.path.exists(path):
             with open(path, "wb") as f:
-                f.write(pdf.content)
+                f.write(requests.get(url).content)
 
-            downloaded.append({
-                "file": path
-            })
+        files.append(path)
 
-            print("DOWNLOADED:", filename)
+    # delete old
+    for f in os.listdir(DIR):
+        full = f"{DIR}/{f}"
+        if full not in files:
+            os.remove(full)
 
-        except Exception as e:
-            print("ERROR:", e)
+    return files
 
-    return downloaded
+

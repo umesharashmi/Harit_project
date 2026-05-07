@@ -69,7 +69,7 @@ export const getCountryArrivals = async (params) => {
 
 export const getCountryCompare = async () => {
   const res = await axios.get(
-    `${BASE_URL}/country/compare-years`,
+    `${BASE_URL}/country/total-by-year-calc`,
     getAuthHeader()
   );
   return res.data;
