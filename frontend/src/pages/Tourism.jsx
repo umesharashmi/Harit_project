@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 
 import {
   getCountryFilters,
-  getCountryArrivals
+  getCountryArrivals,
+  getCountryCompare  
 } from "../api/api";
 
 export default function CountryArrival() {
@@ -51,13 +52,19 @@ export default function CountryArrival() {
   };
 
   const loadCompare = () => {
-  getCountryArrivals({
-    country,
-    month: ""
-  })
+  getCountryCompare()
     .then((res) => {
-      setData(res);
+
+      const formatted = res.map((r) => ({
+        country: "ALL",
+        year: r.year,
+        month: "TOTAL",
+        count: r.total_arrivals
+      }));
+
+      setData(formatted);
       setCompareMode(true);
+
     })
     .catch((err) => console.log(err));
 };
