@@ -6,18 +6,18 @@ URL = "https://www.cse.lk/publications/cse-daily"
 DIR = "cse_pdfs"
 
 
-# ✅ 1. delete only old PDF files (NOT folder)
+# ✅ 1. delete only old PDFs (keep folder)
 def clean_old_pdfs():
     os.makedirs(DIR, exist_ok=True)
 
     for file in os.listdir(DIR):
-        if file.endswith(".pdf"):
+        if file.lower().endswith(".pdf"):
             os.remove(os.path.join(DIR, file))
 
     print("🧹 Old PDF files removed (folder kept)")
 
 
-# ✅ 2. get PDF links using button click (FIXED)
+# ✅ 2. get PDF links (FINAL FIX)
 def get_pdf_links():
     pdf_links = []
 
@@ -27,43 +27,28 @@ def get_pdf_links():
 
         page.goto(URL, timeout=60000)
 
-        # wait until buttons load
-        page.wait_for_selector("text=Download", timeout=15000)
+        # wait until content loads
+        page.wait_for_timeout(5000)
 
-        buttons = page.locator("text=Download")
-        count = buttons.count()
+        # 🔥 get all hrefs
+        links = page.eval_on_selector_all(
+            "a",
+            "els => els.map(e => e.href)"
+        )
 
-        print("🔘 DOWNLOAD BUTTONS FOUND:", count)
-
-        for i in range(count):
-            try:
-                # click and capture new tab
-                with page.expect_popup() as popup_info:
-                    buttons.nth(i).click()
-
-                new_page = popup_info.value
-                new_page.wait_for_load_state()
-
-                pdf_url = new_page.url
-
-                if ".pdf" in pdf_url:
-                    pdf_links.append(pdf_url)
-                    print("✅ PDF LINK:", pdf_url)
-
-                new_page.close()
-
-            except Exception as e:
-                print("⚠️ CLICK ERROR:", e)
+        for link in links:
+            if link and ".pdf" in link.lower():
+                pdf_links.append(link)
 
         browser.close()
 
     # remove duplicates
     pdf_links = list(set(pdf_links))
 
-    # sort latest first (optional)
+    # sort latest first
     pdf_links.sort(reverse=True)
 
-    return pdf_links[:2]  # latest 2
+    return pdf_links[:1]   # 🔥 latest PDF only (06 May 2026)
 
 
 # ✅ 3. download PDFs
@@ -81,7 +66,7 @@ def download_all():
 
     for link in links:
         try:
-            name = link.split("/")[-1].split("?")[0]  # clean filename
+            name = link.split("/")[-1].split("?")[0]
             path = os.path.join(DIR, name)
 
             r = requests.get(link)
@@ -104,3 +89,5 @@ def download_all():
             print("⚠️ DOWNLOAD ERROR:", e)
 
     return files
+
+
