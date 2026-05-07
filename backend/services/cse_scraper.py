@@ -3,11 +3,10 @@ import requests
 import os
 
 URL = "https://www.cse.lk/publications/cse-daily"
-BASE = "https://www.cse.lk"
 DIR = "cse_pdfs"
 
 
-# ✅ delete only old PDF files (NOT folder)
+# ✅ 1. delete only old PDF files (NOT folder)
 def clean_old_pdfs():
     os.makedirs(DIR, exist_ok=True)
 
@@ -18,7 +17,7 @@ def clean_old_pdfs():
     print("🧹 Old PDF files removed (folder kept)")
 
 
-# ✅ get PDF links (JS site)
+# ✅ 2. get PDF links using button click (FIXED)
 def get_pdf_links():
     pdf_links = []
 
@@ -27,31 +26,49 @@ def get_pdf_links():
         page = browser.new_page()
 
         page.goto(URL, timeout=60000)
-        page.wait_for_timeout(5000)
 
-        anchors = page.locator("a")
-        count = anchors.count()
+        # wait until buttons load
+        page.wait_for_selector("text=Download", timeout=15000)
+
+        buttons = page.locator("text=Download")
+        count = buttons.count()
+
+        print("🔘 DOWNLOAD BUTTONS FOUND:", count)
 
         for i in range(count):
-            href = anchors.nth(i).get_attribute("href")
+            try:
+                # click and capture new tab
+                with page.expect_popup() as popup_info:
+                    buttons.nth(i).click()
 
-            if href and ".pdf" in href.lower():
-                if href.startswith("/"):
-                    href = BASE + href
+                new_page = popup_info.value
+                new_page.wait_for_load_state()
 
-                pdf_links.append(href)
+                pdf_url = new_page.url
+
+                if ".pdf" in pdf_url:
+                    pdf_links.append(pdf_url)
+                    print("✅ PDF LINK:", pdf_url)
+
+                new_page.close()
+
+            except Exception as e:
+                print("⚠️ CLICK ERROR:", e)
 
         browser.close()
 
     # remove duplicates
     pdf_links = list(set(pdf_links))
 
+    # sort latest first (optional)
+    pdf_links.sort(reverse=True)
+
     return pdf_links[:2]  # latest 2
 
 
-# ✅ download PDFs
+# ✅ 3. download PDFs
 def download_all():
-    clean_old_pdfs()  # 🔥 only delete PDFs inside folder
+    clean_old_pdfs()
 
     files = []
 
@@ -64,7 +81,7 @@ def download_all():
 
     for link in links:
         try:
-            name = link.split("/")[-1]
+            name = link.split("/")[-1].split("?")[0]  # clean filename
             path = os.path.join(DIR, name)
 
             r = requests.get(link)
