@@ -1,36 +1,28 @@
+from playwright.sync_api import sync_playwright
 import os
 import requests
-from bs4 import BeautifulSoup
 
 SAVE_DIR = "pdfs/stocks"
-
 URL = "https://www.cse.lk/publications/cse-daily"
-
 
 def download_latest_pdf():
 
     os.makedirs(SAVE_DIR, exist_ok=True)
 
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.goto(URL)
 
-    res = requests.get(URL, headers=headers)
+        links = page.eval_on_selector_all("a", "els => els.map(e => e.href)")
 
-    if res.status_code != 200:
-        print("REQUEST FAILED:", res.status_code)
-        return None
+        pdf_url = None
+        for link in links:
+            if ".pdf" in link:
+                pdf_url = link
+                break
 
-    soup = BeautifulSoup(res.text, "html.parser")
-
-    pdf_url = None
-
-    for a in soup.find_all("a", href=True):
-        href = a["href"]
-
-        if ".pdf" in href.lower():
-            pdf_url = requests.compat.urljoin(URL, href)
-            break
+        browser.close()
 
     if not pdf_url:
         print("NO PDF FOUND")
@@ -45,5 +37,4 @@ def download_latest_pdf():
         f.write(pdf.content)
 
     print("✅ DOWNLOADED:", path)
-
     return path
