@@ -17,74 +17,58 @@ def clean_old_pdfs():
 
 
 def get_latest_pdf():
-    pdf_url = None
-
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
 
-        def handle_response(response):
-            nonlocal pdf_url
-
-            url = response.url
-            content_type = response.headers.get("content-type", "")
-
-            if "application/pdf" in content_type or ".pdf" in url.lower():
-                pdf_url = url
-                print("✅ FOUND PDF:", pdf_url)
-
-        page.on("response", handle_response)
-
         page.goto(URL, timeout=60000)
 
+        # wait for page to load download buttons
         page.wait_for_selector("text=Download", timeout=15000)
 
-        # latest first
-        page.locator("text=Download").first.click()
+        pdf_path = None
 
-        page.wait_for_timeout(5000)
+        # IMPORTANT FIX: use expect_download (NOT response listener)
+        with page.expect_download() as download_info:
+            page.get_by_text("Download").first.click()
+
+        download = download_info.value
+
+        # save file
+        filename = download.suggested_filename
+        pdf_path = os.path.join(DIR, filename)
+        download.save_as(pdf_path)
+
+        print("✅ DOWNLOADED:", filename)
 
         browser.close()
 
-    return pdf_url
+        return pdf_path
 
 
 def download_pdf():
     clean_old_pdfs()
 
-    link = get_latest_pdf()
+    file_path = get_latest_pdf()
 
-    if not link:
+    if not file_path:
         print("❌ PDF NOT FOUND")
         return None
 
-    try:
-        name = link.split("/")[-1].split("?")[0]
-        path = os.path.join(DIR, name)
-
-        r = requests.get(link, timeout=30)
-        r.raise_for_status()
-
-        with open(path, "wb") as f:
-            f.write(r.content)
-
-        print("✅ DOWNLOADED:", name)
-        return path
-
-    except Exception as e:
-        print("⚠️ DOWNLOAD ERROR:", e)
-        return None
+    return {
+        "file": file_path,
+        "name": os.path.basename(file_path)
+    }
 
 
 def download_all():
-    file_path = download_pdf()
+    result = download_pdf()
 
-    if not file_path:
+    if not result:
         return []
 
-    return [
-        {
-            "file": file_path,
-            "name": file_path.split("/")[-1]
-        }
-    ]
+    return [result]
+
+
+if __name__ == "__main__":
+    print(download_all())
