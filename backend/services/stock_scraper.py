@@ -1,5 +1,7 @@
 import os
 import requests
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
@@ -13,43 +15,36 @@ def download_latest_pdf():
 
     os.makedirs(SAVE_DIR, exist_ok=True)
 
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
+    options = Options()
+    options.add_argument("--headless")
 
-    response = requests.get(URL, headers=headers)
+    driver = webdriver.Chrome(options=options)
+    driver.get(URL)
 
-    print(response.status_code)
+    soup = BeautifulSoup(driver.page_source, "html.parser")
 
-    soup = BeautifulSoup(response.text, "html.parser")
-    print(soup.text)
+    driver.quit()
 
     pdf_url = None
 
     for a in soup.find_all("a", href=True):
-
         href = a["href"]
 
-        print(href)
-
         if ".pdf" in href.lower():
-
             pdf_url = urljoin(BASE, href)
             break
 
     if not pdf_url:
-
         print("NO PDF FOUND")
         return None
 
     filename = pdf_url.split("/")[-1]
-
     path = os.path.join(SAVE_DIR, filename)
 
-    pdf = requests.get(pdf_url, headers=headers)
+    r = requests.get(pdf_url)
 
     with open(path, "wb") as f:
-        f.write(pdf.content)
+        f.write(r.content)
 
     print("✅ DOWNLOADED:", path)
 
