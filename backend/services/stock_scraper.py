@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
 BASE = "https://www.cse.lk"
-URL = BASE + "/pages/market-reports/market-reports.component.html"
+URL = BASE + "/publications/cse-daily"
 
 SAVE_DIR = "pdfs/stocks"
 
