@@ -1,6 +1,6 @@
 import os
 import requests
-from playwright.sync_api import sync_playwright
+from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
 BASE = "https://www.cse.lk"
@@ -12,32 +12,43 @@ def download_all():
 
     os.makedirs(DIR, exist_ok=True)
 
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
+
     downloaded = []
 
-    with sync_playwright() as p:
-
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-
+    try:
         print("🌐 Loading page...")
 
-        page.goto(URL, timeout=60000)
-        page.wait_for_timeout(5000)
+        r = requests.get(URL, headers=headers, timeout=30)
 
-        links = page.locator("a").evaluate_all(
-            "els => els.map(e => e.href)"
-        )
+        print("STATUS:", r.status_code)
+
+        if r.status_code != 200:
+            print("FAILED TO LOAD PAGE")
+            return []
+
+        soup = BeautifulSoup(r.text, "html.parser")
+
+        links = []
+
+        # collect all possible links
+        for a in soup.find_all("a", href=True):
+
+            href = a["href"]
+
+            if href:
+                links.append(urljoin(BASE, href))
 
         pdfs = []
 
         for link in links:
 
-            if link and ".pdf" in link.lower():
+            if ".pdf" in link.lower():
 
-                full = urljoin(BASE, link)
-
-                if full not in pdfs:
-                    pdfs.append(full)
+                if link not in pdfs:
+                    pdfs.append(link)
 
         print("📄 PDFs FOUND:", len(pdfs))
 
@@ -50,25 +61,25 @@ def download_all():
 
                 print("⬇ Downloading:", filename)
 
-                r = requests.get(link, timeout=30)
+                pdf = requests.get(link, headers=headers, timeout=30)
 
-                if r.status_code == 200:
+                if pdf.status_code == 200:
 
                     with open(path, "wb") as f:
-                        f.write(r.content)
+                        f.write(pdf.content)
 
-                    downloaded.append({
-                        "file": path
-                    })
+                    downloaded.append({"file": path})
 
                     print("✅ Saved:", filename)
 
                 else:
-                    print("❌ Failed:", r.status_code)
+                    print("❌ PDF FAIL:", pdf.status_code)
 
             except Exception as e:
                 print("ERROR:", e)
 
-        browser.close()
+        return downloaded
 
-    return downloaded
+    except Exception as e:
+        print("SCRAPER ERROR:", e)
+        return []

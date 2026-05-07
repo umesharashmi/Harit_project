@@ -11,4 +11,3 @@ pdfplumber
 pandas
 psycopg2-binary
 apscheduler
-playwright
