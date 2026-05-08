@@ -1,10 +1,4 @@
 import pdfplumber
-import re
-
-def clean_text(x):
-    if x is None:
-        return ""
-    return " ".join(str(x).split())
 
 def clean_float(x):
     try:
@@ -22,7 +16,6 @@ def clean_int(x):
     except:
         return None
 
-
 def parse_equity(file_path):
 
     rows = []
@@ -30,21 +23,33 @@ def parse_equity(file_path):
 
     with pdfplumber.open(file_path) as pdf:
 
-        for page in pdf.pages:
+        print("📄 TOTAL PAGES:", len(pdf.pages))
+
+        for page_no, page in enumerate(pdf.pages):
+
+            print(f"🔎 Checking page {page_no+1}")
 
             text = page.extract_text() or ""
 
-            # ✅ better section detection
+            # ✅ START section
             if "02. Daily Movements on Equity" in text:
                 inside_section = True
+                print(f"✅ ENTER SECTION (page {page_no+1})")
 
+            # ✅ STOP (FIXED)
             if inside_section and "03." in text and "Debt" in text:
+                print(f"⛔ EXIT SECTION (page {page_no+1})")
                 break
 
             if not inside_section:
                 continue
 
-            tables = page.extract_tables() or []
+            tables = page.extract_tables()
+
+            if not tables:
+                continue
+
+            print(f"📊 Page {page_no+1} → Tables: {len(tables)}")
 
             for table in tables:
                 for row in table:
@@ -52,15 +57,13 @@ def parse_equity(file_path):
                     if not row:
                         continue
 
-                    # ✅ normalize row (important fix)
-                    row = [(clean_text(r)) for r in row if r is not None]
+                    row = (row + [None] * 20)[:20]
+                    row = [r.strip() if isinstance(r, str) else r for r in row]
 
-                    # skip header
-                    if len(row) > 0 and "Industry" in row[0]:
+                    if row[0] and "Industry" in str(row[0]):
                         continue
 
-                    # ❌ skip broken rows
-                    if len(row) < 12:
+                    if all(r is None or r == "" for r in row):
                         continue
 
                     try:
@@ -82,6 +85,7 @@ def parse_equity(file_path):
                         rows.append(data)
 
                     except Exception as e:
-                        print("ROW ERROR:", e)
+                        print(f"❌ ROW ERROR (page {page_no+1}):", e)
 
-    print("TOTAL ROWS:", len(rows))
+    print("✅ TOTAL PARSED ROWS:", len(rows))
+    return rows
