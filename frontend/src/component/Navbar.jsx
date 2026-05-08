@@ -41,6 +41,13 @@ export default function Navbar() {
           🥦 Vegetable
         </Link>
 
+        <Link
+          to="/cse"
+           className={`nav-link ${isActive("/cse") ? "active" : ""}`}
+            >
+            📈 CSE Data
+              </Link>
+
         <button onClick={logout} className="logout-btn">
           Logout
         </button>
