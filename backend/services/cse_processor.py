@@ -1,90 +1,74 @@
 import threading
 from app.database import SessionLocal
-from app.models import CorporateDebtMovement
+from app.models import EquityMovement
 from services.cse_scraper import download_all
-from services.cse_parser import parse_corporate_debt
-
-_lock = threading.Lock()
-_running = False
-
+from services.cse_parser import parse_equity
 
 def process_cse():
 
-    global _running
+    db = SessionLocal()
 
-    if _running:
-        print("⚠️ CSE already running - skipping duplicate call")
-        return
+    try:
+        print("🔥 START CSE PROCESS")
 
-    with _lock:
+        files = download_all()
 
-        _running = True
-        db = SessionLocal()
+        if not files:
+            print("❌ No PDFs found")
+            return
 
-        try:
-            print("🔥 START CSE PROCESS")
+        # ✅ CLEAR OLD DATA (KEEP THIS)
+        print("🧹 Clearing old data...")
+        db.query(EquityMovement).delete()
+        db.commit()
 
-            files = download_all()
+        counter = 0
 
-            if not files:
-                print("❌ No PDFs found")
-                return
+        for item in files:
 
-            print("🧹 Clearing old data...")
-            db.query(CorporateDebtMovement).delete()
-            db.commit()
+            file_path = item["file"]
+            print("📊 PROCESSING:", file_path)
 
-            counter = 0
+            rows = parse_equity(file_path)
 
-            for item in files:
+            if not rows:
+                print("⚠️ No rows parsed")
+                return   # ❗ stop here (empty DB avoid)
 
-                file_path = item["file"]
-                print("📊 PROCESSING:", file_path)
+            for r in rows:
+                try:
+                    obj = EquityMovement(
+                        report_date=item["name"],
+                        industry_group=r.get("industry_group"),
+                        board=r.get("board"),
+                        company_name=r.get("company_name"),
+                        type=r.get("type"),
+                        close_price=r.get("close_price"),
+                        last_traded_price=r.get("last_traded_price"),
+                        last_traded_date=r.get("last_traded_date"),
+                        high=r.get("high"),
+                        low=r.get("low"),
+                        foreign_holding=r.get("foreign_holding"),
+                        turnover=r.get("turnover"),
+                        quantity=r.get("quantity"),
+                    )
 
-                rows = parse_corporate_debt(file_path)
+                    db.add(obj)
+                    counter += 1
 
-                if not rows:
-                    print("⚠️ No rows parsed from:", file_path)
-                    continue
+                    # ✅ small batch commit (less memory)
+                    if counter % 100 == 0:
+                        db.commit()
+                        print(f"💾 committed {counter}")
 
-                for r in rows:
+                except Exception as e:
+                    print("❌ INSERT ERROR:", e)
 
-                    try:
-                        obj = CorporateDebtMovement(
-                            report_date=item["name"],
-                            industry_group=r.get("industry_group"),
-                            company_name=r.get("company_name"),
-                            code_id=r.get("code_id"),
-                            debt_date=r.get("debt_date"),
-                            coupon_rate=r.get("coupon_rate"),
-                            tom=r.get("tom"),
-                            spot=r.get("spot"),
-                            issued_date=r.get("issued_date"),
-                            maturity_date=r.get("maturity_date"),
-                            coupon_freq=r.get("coupon_freq"),
-                            next_interest_due_date=r.get("next_interest_due_date"),
-                            quantity=r.get("quantity"),
-                            par=r.get("par")
-                        )
+        db.commit()
+        print("✅ DONE. TOTAL INSERTED:", counter)
 
-                        db.add(obj)
-                        counter += 1
+    except Exception as e:
+        print("💥 PROCESS CRASH:", e)
 
-                        # ✅ batch commit
-                        if counter % 200 == 0:
-                            db.commit()
-                            print(f"💾 committed {counter}")
-
-                    except Exception as e:
-                        print("❌ INSERT ERROR:", e)
-
-            db.commit()
-
-            print("✅ DONE. TOTAL INSERTED:", counter)
-
-        except Exception as e:
-            print("💥 PROCESS CRASH:", e)
-
-        finally:
-            db.close()
-            _running = False
+    finally:
+        db.close()

@@ -43,36 +43,22 @@ class CountryArrival(Base):
 
     total = Column(Integer)
 
-class CorporateDebtMovement(Base):
+class EquityMovement(Base):
 
-    __tablename__ = "corporate_debt_movements"
+    __tablename__ = "equity_movements"
 
     id = Column(Integer, primary_key=True, index=True)
 
     report_date = Column(String)
-
     industry_group = Column(String)
-
+    board = Column(String)
     company_name = Column(String)
-
-    code_id = Column(String)
-
-    debt_date = Column(String)
-
-    coupon_rate = Column(Float)
-
-    tom = Column(Float)
-
-    spot = Column(Float)
-
-    issued_date = Column(String)
-
-    maturity_date = Column(String)
-
-    coupon_freq = Column(Integer)
-
-    next_interest_due_date = Column(String)
-
+    type = Column(String)
+    close_price = Column(Float)
+    last_traded_price = Column(Float)
+    last_traded_date = Column(String)
+    high = Column(Float)
+    low = Column(Float)
+    foreign_holding = Column(Integer)
+    turnover = Column(Float)
     quantity = Column(Integer)
-
-    par = Column(Float)
