@@ -10,7 +10,6 @@ from services.processor import process_all
 from services.tourism_processor import process_country
 from services.cse_processor import process_cse
 
-
 from scheduler import start_scheduler
 
 app = FastAPI(title="Harit API")
@@ -41,22 +40,35 @@ app.include_router(main_router)
 app.include_router(auth_router)
 
 # ---------------- STARTUP ----------------
+STARTED = False  # 🔥 guard flag
+
 @app.on_event("startup")
 def startup_event():
+    global STARTED
+
     print("🚀 HARIT API STARTING...")
-    
+
+    # 🔥 prevent duplicate execution
+    if STARTED:
+        print("⚠️ Startup already executed. Skipping...")
+        return
+
+    STARTED = True
+
     # Start scheduler
     start_scheduler()
 
-    # Run heavy tasks in background
+    # Run heavy tasks in background thread
     def run_tasks():
         try:
             print("⏳ Processing data...")
+
             process_all()
             process_country()
             process_cse()
-           
+
             print("✅ STARTUP TASKS DONE")
+
         except Exception as e:
             print("❌ STARTUP ERROR:", e)
 
