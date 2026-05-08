@@ -19,6 +19,12 @@ app = FastAPI(title="Harit API")
 def root():
     return {"message": "Harit API is running 🚀"}
 
+@app.get("/run-cse")
+def run_cse():
+    import threading
+    threading.Thread(target=process_cse, daemon=True).start()
+    return {"status": "started"}
+
 # ---------------- CORS ----------------
 app.add_middleware(
     CORSMiddleware,
@@ -65,7 +71,7 @@ async def startup_event():
 
             #process_all()
             #process_country()
-            await asyncio.to_thread(process_cse)  # 🔥 FIX (no crash)
+            #await asyncio.to_thread(process_cse)  # 🔥 FIX (no crash)
 
             print("✅ STARTUP TASKS DONE")
 
