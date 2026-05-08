@@ -78,4 +78,4 @@ async def startup_event():
         except Exception as e:
             print("❌ STARTUP ERROR:", e)
 
-    asyncio.create_task(run_tasks())
+    #asyncio.create_task(run_tasks())
