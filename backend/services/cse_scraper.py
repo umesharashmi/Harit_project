@@ -1,5 +1,6 @@
 from playwright.sync_api import sync_playwright
 import os
+import time
 
 URL = "https://www.cse.lk/publications/cse-daily"
 DIR = "cse_pdfs"
@@ -66,4 +67,11 @@ def download_all():
     if not file_path:
         return []
 
-    return [{"file": file_path, "name": os.path.basename(file_path)}]
+    # clean name
+    clean_name = f"cse_{time.strftime('%Y%m%d')}.pdf"
+
+    new_path = os.path.join(DIR, clean_name)
+
+    os.rename(file_path, new_path)
+
+    return [{"file": new_path, "name": clean_name}]
