@@ -1,10 +1,5 @@
 import pdfplumber
 
-def clean_text(x):
-    if x is None:
-        return None
-    return " ".join(str(x).split())
-
 def clean_float(x):
     try:
         if x is None or x == "":
@@ -21,7 +16,6 @@ def clean_int(x):
     except:
         return None
 
-
 def parse_equity(file_path):
 
     rows = []
@@ -33,12 +27,16 @@ def parse_equity(file_path):
 
         for page_no, page in enumerate(pdf.pages):
 
+            print(f"🔎 Checking page {page_no+1}")
+
             text = page.extract_text() or ""
 
+            # ✅ START section
             if "02. Daily Movements on Equity" in text:
                 inside_section = True
                 print(f"✅ ENTER SECTION (page {page_no+1})")
 
+            # ✅ STOP (FIXED)
             if inside_section and "03." in text and "Debt" in text:
                 print(f"⛔ EXIT SECTION (page {page_no+1})")
                 break
@@ -46,7 +44,12 @@ def parse_equity(file_path):
             if not inside_section:
                 continue
 
-            tables = page.extract_tables() or []
+            tables = page.extract_tables()
+
+            if not tables:
+                continue
+
+            print(f"📊 Page {page_no+1} → Tables: {len(tables)}")
 
             for table in tables:
                 for row in table:
@@ -55,26 +58,12 @@ def parse_equity(file_path):
                         continue
 
                     row = (row + [None] * 20)[:20]
-                    row = [clean_text(r) for r in row]
+                    row = [r.strip() if isinstance(r, str) else r for r in row]
 
-                    # skip headers
                     if row[0] and "Industry" in str(row[0]):
                         continue
 
                     if all(r is None or r == "" for r in row):
-                        continue
-
-                    # 🔥 FIX 1: broken company names
-                    if row[2]:
-                        row[2] = row[2].replace("\n", " ")
-                    if row[0]:
-                        row[0] = row[0].replace("\n", " ")
-
-                    # 🔥 FIX 2: skip bad numeric rows (prevents DB crash)
-                    try:
-                        _ = float(str(row[4]).replace(",", ""))
-                        _ = float(str(row[5]).replace(",", ""))
-                    except:
                         continue
 
                     try:
