@@ -1,76 +1,90 @@
-from playwright.sync_api import sync_playwright
-import os
-import time
+import threading
+from app.database import SessionLocal
+from app.models import CorporateDebtMovement
+from services.cse_scraper import download_all
+from services.cse_parser import parse_corporate_debt
 
-URL = "https://www.cse.lk/publications/cse-daily"
-DIR = "cse_pdfs"
-
-
-def clean_old_pdfs():
-    os.makedirs(DIR, exist_ok=True)
-
-    for f in os.listdir(DIR):
-        if f.lower().endswith(".pdf"):
-            try:
-                os.remove(os.path.join(DIR, f))
-            except:
-                pass
-
-    print("🧹 Old PDFs removed")
+_lock = threading.Lock()
+_running = False
 
 
-def get_latest_pdf():
+def process_cse():
 
-    os.makedirs(DIR, exist_ok=True)
+    global _running
 
-    with sync_playwright() as p:
+    if _running:
+        print("⚠️ CSE already running - skipping duplicate call")
+        return
 
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(accept_downloads=True)
-        page = context.new_page()
+    with _lock:
 
-        print("🌐 Opening browser...")
+        _running = True
+        db = SessionLocal()
 
-        page.goto(URL, timeout=60000)
-        page.wait_for_load_state("networkidle")
+        try:
+            print("🔥 START CSE PROCESS")
 
-        print("🔍 Searching download button...")
+            files = download_all()
 
-        download_button = page.locator("text=Download").first
+            if not files:
+                print("❌ No PDFs found")
+                return
 
-        if download_button.count() == 0:
-            print("❌ Download button not found")
-            return None
+            print("🧹 Clearing old data...")
+            db.query(CorporateDebtMovement).delete()
+            db.commit()
 
-        print("⬇️ Clicking download...")
+            counter = 0
 
-        with page.expect_download() as download_info:
-            download_button.click(force=True)
+            for item in files:
 
-        download = download_info.value
+                file_path = item["file"]
+                print("📊 PROCESSING:", file_path)
 
-        filepath = os.path.join(DIR, download.suggested_filename)
-        download.save_as(filepath)
+                rows = parse_corporate_debt(file_path)
 
-        browser.close()
+                if not rows:
+                    print("⚠️ No rows parsed from:", file_path)
+                    continue
 
-        print("✅ DOWNLOADED:", filepath)
+                for r in rows:
 
-        return filepath
+                    try:
+                        obj = CorporateDebtMovement(
+                            report_date=item["name"],
+                            industry_group=r.get("industry_group"),
+                            company_name=r.get("company_name"),
+                            code_id=r.get("code_id"),
+                            debt_date=r.get("debt_date"),
+                            coupon_rate=r.get("coupon_rate"),
+                            tom=r.get("tom"),
+                            spot=r.get("spot"),
+                            issued_date=r.get("issued_date"),
+                            maturity_date=r.get("maturity_date"),
+                            coupon_freq=r.get("coupon_freq"),
+                            next_interest_due_date=r.get("next_interest_due_date"),
+                            quantity=r.get("quantity"),
+                            par=r.get("par")
+                        )
 
+                        db.add(obj)
+                        counter += 1
 
-def download_all():
-    clean_old_pdfs()
+                        # ✅ batch commit
+                        if counter % 200 == 0:
+                            db.commit()
+                            print(f"💾 committed {counter}")
 
-    file_path = get_latest_pdf()
+                    except Exception as e:
+                        print("❌ INSERT ERROR:", e)
 
-    if not file_path:
-        return []
+            db.commit()
 
-    clean_name = f"cse_{time.strftime('%Y%m%d')}.pdf"
+            print("✅ DONE. TOTAL INSERTED:", counter)
 
-    new_path = os.path.join(DIR, clean_name)
+        except Exception as e:
+            print("💥 PROCESS CRASH:", e)
 
-    os.rename(file_path, new_path)
-
-    return [{"file": new_path, "name": clean_name}]
+        finally:
+            db.close()
+            _running = False
