@@ -1,5 +1,10 @@
 import pdfplumber
 
+def clean_text(x):
+    if x is None:
+        return ""
+    return " ".join(str(x).split())
+
 def clean_float(x):
     try:
         if x is None or x == "":
@@ -15,6 +20,7 @@ def clean_int(x):
         return int(str(x).replace(",", "").strip())
     except:
         return None
+
 
 def parse_equity(file_path):
 
@@ -36,15 +42,15 @@ def parse_equity(file_path):
                 inside_section = True
                 print(f"✅ ENTER SECTION (page {page_no+1})")
 
-            # ✅ STOP (FIXED)
-            if inside_section and "03." in text and "Debt" in text:
+            # ✅ STOP section (safe)
+            if inside_section and "03." in text:
                 print(f"⛔ EXIT SECTION (page {page_no+1})")
                 break
 
             if not inside_section:
                 continue
 
-            tables = page.extract_tables()
+            tables = page.extract_tables() or []
 
             if not tables:
                 continue
@@ -57,13 +63,15 @@ def parse_equity(file_path):
                     if not row:
                         continue
 
-                    row = (row + [None] * 20)[:20]
-                    row = [r.strip() if isinstance(r, str) else r for r in row]
+                    # ✅ SAFE NORMALIZATION (important fix)
+                    row = [(clean_text(r)) for r in row]
 
-                    if row[0] and "Industry" in str(row[0]):
+                    # skip header rows
+                    if len(row) > 0 and "Industry" in row[0]:
                         continue
 
-                    if all(r is None or r == "" for r in row):
+                    # skip broken rows
+                    if len(row) < 12:
                         continue
 
                     try:
