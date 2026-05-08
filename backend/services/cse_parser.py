@@ -1,8 +1,9 @@
 import pdfplumber
+import re
 
 def clean_text(x):
     if x is None:
-        return None
+        return ""
     return " ".join(str(x).split())
 
 def clean_float(x):
@@ -29,14 +30,15 @@ def parse_equity(file_path):
 
     with pdfplumber.open(file_path) as pdf:
 
-        for page_no, page in enumerate(pdf.pages):
+        for page in pdf.pages:
 
             text = page.extract_text() or ""
 
+            # ✅ better section detection
             if "02. Daily Movements on Equity" in text:
                 inside_section = True
 
-            if inside_section and "03." in text:
+            if inside_section and "03." in text and "Debt" in text:
                 break
 
             if not inside_section:
@@ -50,14 +52,15 @@ def parse_equity(file_path):
                     if not row:
                         continue
 
-                    # ✅ SAFE FIX: normalize row length
-                    row = (row + [None]*12)[:12]
-
-                    # clean text
-                    row = [clean_text(r) for r in row]
+                    # ✅ normalize row (important fix)
+                    row = [(clean_text(r)) for r in row if r is not None]
 
                     # skip header
-                    if row[0] and "Industry" in str(row[0]):
+                    if len(row) > 0 and "Industry" in row[0]:
+                        continue
+
+                    # ❌ skip broken rows
+                    if len(row) < 12:
                         continue
 
                     try:
@@ -71,8 +74,6 @@ def parse_equity(file_path):
                             "last_traded_date": row[6],
                             "high": clean_float(row[7]),
                             "low": clean_float(row[8]),
-
-                            # 🔥 IMPORTANT FIX (BIGINT SAFE)
                             "foreign_holding": clean_int(row[9]),
                             "turnover": clean_float(row[10]),
                             "quantity": clean_int(row[11]),
@@ -84,4 +85,3 @@ def parse_equity(file_path):
                         print("ROW ERROR:", e)
 
     print("TOTAL ROWS:", len(rows))
-    return rows
