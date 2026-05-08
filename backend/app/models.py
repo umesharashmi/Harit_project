@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float,Integer,Date
+from sqlalchemy import Column, String, Float,Integer,Date,BigInteger
 from .database import Base
 
 class Price(Base):
@@ -59,6 +59,6 @@ class EquityMovement(Base):
     last_traded_date = Column(String)
     high = Column(Float)
     low = Column(Float)
-    foreign_holding = Column(Integer)
+    foreign_holding = Column(BigInteger)
     turnover = Column(Float)
-    quantity = Column(Integer)
+    quantity = Column(BigInteger)
