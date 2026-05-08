@@ -28,18 +28,22 @@ def parse_corporate_debt(file_path):
 
         print("📄 TOTAL PAGES:", len(pdf.pages))
 
-        for page_no, page in enumerate(pdf.pages, start=1):
+        # 🔥 LIMIT TO FIRST 20 PAGES
+        max_pages = min(20, len(pdf.pages))
+
+        for page_no in range(max_pages):
+            page = pdf.pages[page_no]
 
             text = page.extract_text() or ""
 
             # ✅ START section detect
             if "02. Daily Movements on Corporate Debt" in text:
                 inside_section = True
-                print(f"✅ ENTER SECTION (page {page_no})")
+                print(f"✅ ENTER SECTION (page {page_no+1})")
 
-            # ❌ STOP section detect
-            if inside_section and "03." in text:
-                print(f"⛔ EXIT SECTION (page {page_no})")
+            # ❌ STOP section detect (safer)
+            if inside_section and "03. Daily" in text:
+                print(f"⛔ EXIT SECTION (page {page_no+1})")
                 break
 
             if not inside_section:
@@ -93,8 +97,13 @@ def parse_corporate_debt(file_path):
 
                         rows.append(data)
 
+                        # 🔥 OPTIONAL SAFETY LIMIT
+                        if len(rows) > 200:
+                            print("⛔ Enough data collected, stopping early")
+                            return rows
+
                     except Exception as e:
-                        print(f"❌ ROW ERROR (page {page_no}):", e)
+                        print(f"❌ ROW ERROR (page {page_no+1}):", e)
 
     print("✅ TOTAL PARSED ROWS:", len(rows))
     return rows
