@@ -2,7 +2,7 @@ import pdfplumber
 
 def clean_text(x):
     if x is None:
-        return ""
+        return None
     return " ".join(str(x).split())
 
 def clean_float(x):
@@ -33,17 +33,13 @@ def parse_equity(file_path):
 
         for page_no, page in enumerate(pdf.pages):
 
-            print(f"🔎 Checking page {page_no+1}")
-
             text = page.extract_text() or ""
 
-            # ✅ START section
             if "02. Daily Movements on Equity" in text:
                 inside_section = True
                 print(f"✅ ENTER SECTION (page {page_no+1})")
 
-            # ✅ STOP section (safe)
-            if inside_section and "03." in text:
+            if inside_section and "03." in text and "Debt" in text:
                 print(f"⛔ EXIT SECTION (page {page_no+1})")
                 break
 
@@ -52,26 +48,33 @@ def parse_equity(file_path):
 
             tables = page.extract_tables() or []
 
-            if not tables:
-                continue
-
-            print(f"📊 Page {page_no+1} → Tables: {len(tables)}")
-
             for table in tables:
                 for row in table:
 
                     if not row:
                         continue
 
-                    # ✅ SAFE NORMALIZATION (important fix)
-                    row = [(clean_text(r)) for r in row]
+                    row = (row + [None] * 20)[:20]
+                    row = [clean_text(r) for r in row]
 
-                    # skip header rows
-                    if len(row) > 0 and "Industry" in row[0]:
+                    # skip headers
+                    if row[0] and "Industry" in str(row[0]):
                         continue
 
-                    # skip broken rows
-                    if len(row) < 12:
+                    if all(r is None or r == "" for r in row):
+                        continue
+
+                    # 🔥 FIX 1: broken company names
+                    if row[2]:
+                        row[2] = row[2].replace("\n", " ")
+                    if row[0]:
+                        row[0] = row[0].replace("\n", " ")
+
+                    # 🔥 FIX 2: skip bad numeric rows (prevents DB crash)
+                    try:
+                        _ = float(str(row[4]).replace(",", ""))
+                        _ = float(str(row[5]).replace(",", ""))
+                    except:
                         continue
 
                     try:

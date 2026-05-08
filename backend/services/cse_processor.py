@@ -17,7 +17,6 @@ def process_cse():
             print("❌ No PDFs found")
             return
 
-        # ✅ CLEAR OLD DATA (KEEP THIS)
         print("🧹 Clearing old data...")
         db.query(EquityMovement).delete()
         db.commit()
@@ -33,7 +32,7 @@ def process_cse():
 
             if not rows:
                 print("⚠️ No rows parsed")
-                return   # ❗ stop here (empty DB avoid)
+                return
 
             for r in rows:
                 try:
@@ -56,13 +55,13 @@ def process_cse():
                     db.add(obj)
                     counter += 1
 
-                    # ✅ small batch commit (less memory)
                     if counter % 100 == 0:
                         db.commit()
                         print(f"💾 committed {counter}")
 
                 except Exception as e:
                     print("❌ INSERT ERROR:", e)
+                    db.rollback()   # 🔥 VERY IMPORTANT FIX
 
         db.commit()
         print("✅ DONE. TOTAL INSERTED:", counter)
