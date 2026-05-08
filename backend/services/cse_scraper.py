@@ -1,7 +1,7 @@
 import requests
 import os
 
-URL = "https://www.cse.lk/api/cse-daily"
+URL = "https://www.cse.lk/publications/cse-daily"
 DIR = "cse_pdfs"
 
 
