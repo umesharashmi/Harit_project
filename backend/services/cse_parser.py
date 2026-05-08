@@ -30,15 +30,15 @@ def parse_corporate_debt(file_path):
 
         for page_no, page in enumerate(pdf.pages, start=1):
 
-            text = page.extract_text()
+            text = page.extract_text() or ""
 
             # ✅ START section detect
-            if text and "02. Daily Movements on Corporate Debt" in text:
+            if "02. Daily Movements on Corporate Debt" in text:
                 inside_section = True
                 print(f"✅ ENTER SECTION (page {page_no})")
 
-            # ✅ STOP when next section comes
-            if inside_section and text and "03." in text:
+            # ❌ STOP section detect
+            if inside_section and "03." in text:
                 print(f"⛔ EXIT SECTION (page {page_no})")
                 break
 
@@ -60,21 +60,20 @@ def parse_corporate_debt(file_path):
                     if not row:
                         continue
 
-                    # normalize length (important for broken rows)
+                    # normalize row length
                     row = (row + [None] * 20)[:20]
 
-                    # clean spaces
+                    # clean strings
                     row = [r.strip() if isinstance(r, str) else r for r in row]
 
-                    # ❌ skip header rows
+                    # skip header rows
                     if row[0] and "Industry" in str(row[0]):
                         continue
 
-                    # ❌ skip fully empty rows
+                    # skip empty rows
                     if all(r is None or r == "" for r in row):
                         continue
 
-                    # ⚠️ DO NOT SKIP PARTIAL DATA (keep original requirement)
                     try:
                         data = {
                             "industry_group": row[0],
