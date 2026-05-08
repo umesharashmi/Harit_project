@@ -22,12 +22,28 @@ def clean_int(x):
 def parse_corporate_debt(file_path):
 
     rows = []
+    inside_section = False
 
     with pdfplumber.open(file_path) as pdf:
 
-        print("📄 Pages:", len(pdf.pages))
+        print("📄 TOTAL PAGES:", len(pdf.pages))
 
-        for page in pdf.pages:
+        for page_no, page in enumerate(pdf.pages, start=1):
+
+            text = page.extract_text()
+
+            # ✅ START section detect
+            if text and "02. Daily Movements on Corporate Debt" in text:
+                inside_section = True
+                print(f"✅ ENTER SECTION (page {page_no})")
+
+            # ✅ STOP when next section comes
+            if inside_section and text and "03." in text:
+                print(f"⛔ EXIT SECTION (page {page_no})")
+                break
+
+            if not inside_section:
+                continue
 
             tables = page.extract_tables()
 
@@ -44,13 +60,22 @@ def parse_corporate_debt(file_path):
                     if not row:
                         continue
 
-                    # normalize row length (IMPORTANT)
+                    # normalize length (important for broken rows)
                     row = (row + [None] * 20)[:20]
 
+                    # clean spaces
                     row = [r.strip() if isinstance(r, str) else r for r in row]
 
-                    try:
+                    # ❌ skip header rows
+                    if row[0] and "Industry" in str(row[0]):
+                        continue
 
+                    # ❌ skip fully empty rows
+                    if all(r is None or r == "" for r in row):
+                        continue
+
+                    # ⚠️ DO NOT SKIP PARTIAL DATA (keep original requirement)
+                    try:
                         data = {
                             "industry_group": row[0],
                             "company_name": row[1],
@@ -67,13 +92,10 @@ def parse_corporate_debt(file_path):
                             "par": clean_float(row[12]),
                         }
 
-                        # ❗ NO SKIP LOGIC (keep everything)
                         rows.append(data)
 
                     except Exception as e:
-                        print("❌ ROW ERROR:", e)
-                        continue
+                        print(f"❌ ROW ERROR (page {page_no}):", e)
 
     print("✅ TOTAL PARSED ROWS:", len(rows))
-
     return rows

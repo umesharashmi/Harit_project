@@ -18,8 +18,8 @@ def process_cse():
         return
 
     with _lock:
-        _running = True
 
+        _running = True
         db = SessionLocal()
 
         try:
@@ -31,7 +31,8 @@ def process_cse():
                 print("❌ No PDFs found")
                 return
 
-            # clear old data
+            # ✅ clear old data safely
+            print("🧹 Clearing old data...")
             db.query(CorporateDebtMovement).delete()
             db.commit()
 
@@ -43,6 +44,10 @@ def process_cse():
                 print("📊 PROCESSING:", file_path)
 
                 rows = parse_corporate_debt(file_path)
+
+                if not rows:
+                    print("⚠️ No rows parsed from:", file_path)
+                    continue
 
                 for r in rows:
 
@@ -67,9 +72,15 @@ def process_cse():
                         db.add(obj)
                         counter += 1
 
+                        # ✅ batch commit (prevent crash on large PDFs)
+                        if counter % 500 == 0:
+                            db.commit()
+                            print(f"💾 committed {counter}")
+
                     except Exception as e:
                         print("❌ INSERT ERROR:", e)
 
+            # ✅ final commit
             db.commit()
 
             print("✅ DONE. TOTAL INSERTED:", counter)
