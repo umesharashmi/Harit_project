@@ -1,6 +1,6 @@
+from playwright.sync_api import sync_playwright
 import requests
 import os
-import re
 from urllib.parse import urljoin
 
 URL = "https://www.cse.lk/publications/cse-daily"
@@ -18,124 +18,89 @@ def clean_old_pdfs():
 
             try:
                 os.remove(os.path.join(DIR, f))
-            except Exception:
+            except:
                 pass
 
     print("🧹 Old PDFs removed")
-
-
-def extract_pdf_url(html):
-
-    # Absolute PDF links
-    patterns = [
-
-        r'https?:\/\/[^\s"\']+\.pdf',
-
-        r'\/[^\s"\']+\.pdf'
-    ]
-
-    for pattern in patterns:
-
-        match = re.search(pattern, html, re.IGNORECASE)
-
-        if match:
-
-            pdf_url = match.group(0)
-
-            return urljoin(BASE_URL, pdf_url)
-
-    return None
 
 
 def get_latest_pdf():
 
     os.makedirs(DIR, exist_ok=True)
 
-    headers = {
-
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/122.0.0.0 Safari/537.36"
-        )
-
-    }
-
     try:
 
-        print("🌐 Opening CSE page...")
+        print("🌐 Opening browser...")
 
-        response = requests.get(
-            URL,
-            headers=headers,
-            timeout=30
-        )
+        with sync_playwright() as p:
 
-        response.raise_for_status()
+            browser = p.chromium.launch(headless=True)
 
-        html = response.text
+            page = browser.new_page()
 
-        print("🔍 Searching PDF link...")
+            page.goto(URL, timeout=60000)
 
-        pdf_url = extract_pdf_url(html)
+            # wait page render
+            page.wait_for_timeout(5000)
+
+            print("🔍 Searching download links...")
+
+            links = page.locator("a").evaluate_all(
+                """
+                elements => elements.map(el => el.href)
+                """
+            )
+
+            browser.close()
+
+        pdf_url = None
+
+        for link in links:
+
+            if ".pdf" in link.lower():
+
+                pdf_url = link
+                break
 
         if not pdf_url:
 
-            print("❌ No PDF URL found")
+            print("❌ PDF URL not found")
             return None
 
-        print("📄 PDF URL FOUND:")
+        pdf_url = urljoin(BASE_URL, pdf_url)
+
+        print("📄 PDF URL:")
         print(pdf_url)
 
-        filename = pdf_url.split("/")[-1]
-
-        # remove query params
-        filename = filename.split("?")[0]
-
-        filepath = os.path.join(DIR, filename)
+        headers = {
+            "User-Agent": "Mozilla/5.0"
+        }
 
         print("⬇️ Downloading PDF...")
 
-        pdf_response = requests.get(
+        response = requests.get(
             pdf_url,
             headers=headers,
             timeout=60
         )
 
-        pdf_response.raise_for_status()
+        response.raise_for_status()
 
-        content_type = pdf_response.headers.get(
-            "Content-Type",
-            ""
-        )
+        filename = pdf_url.split("/")[-1]
+        filename = filename.split("?")[0]
 
-        # optional validation
-        if "pdf" not in content_type.lower():
-
-            print("⚠️ Warning: Response may not be PDF")
-            print("Content-Type:", content_type)
+        filepath = os.path.join(DIR, filename)
 
         with open(filepath, "wb") as f:
+            f.write(response.content)
 
-            f.write(pdf_response.content)
-
-        print("✅ PDF DOWNLOADED SUCCESSFULLY")
-        print("📁 Saved to:", filepath)
+        print("✅ DOWNLOADED:", filename)
 
         return filepath
 
-    except requests.exceptions.RequestException as e:
-
-        print("❌ NETWORK ERROR:")
-        print(str(e))
-
-        return None
-
     except Exception as e:
 
-        print("❌ ERROR:")
-        print(str(e))
-
+        print("❌ ERROR:", str(e))
         return None
 
 
@@ -151,10 +116,8 @@ def download_pdf():
         return None
 
     return {
-
         "file": file_path,
         "name": os.path.basename(file_path)
-
     }
 
 
@@ -162,10 +125,7 @@ def download_all():
 
     result = download_pdf()
 
-    if result:
-        return [result]
-
-    return []
+    return [result] if result else []
 
 
 if __name__ == "__main__":
