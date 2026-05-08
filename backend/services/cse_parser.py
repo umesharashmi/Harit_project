@@ -16,7 +16,6 @@ def clean_int(x):
     except:
         return None
 
-
 def parse_equity(file_path):
 
     rows = []
@@ -26,12 +25,10 @@ def parse_equity(file_path):
 
         print("📄 TOTAL PAGES:", len(pdf.pages))
 
-        # ✅ ONLY FIRST 20 PAGES
-        max_pages = min(20, len(pdf.pages))
+        for page_no, page in enumerate(pdf.pages):
 
-        for page_no in range(max_pages):
+            print(f"🔎 Checking page {page_no+1}")
 
-            page = pdf.pages[page_no]
             text = page.extract_text() or ""
 
             # ✅ START section
@@ -39,8 +36,8 @@ def parse_equity(file_path):
                 inside_section = True
                 print(f"✅ ENTER SECTION (page {page_no+1})")
 
-            # ❌ STOP
-            if inside_section and "03." in text:
+            # ✅ STOP (FIXED)
+            if inside_section and "03." in text and "Debt" in text:
                 print(f"⛔ EXIT SECTION (page {page_no+1})")
                 break
 
