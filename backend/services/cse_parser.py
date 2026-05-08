@@ -50,7 +50,7 @@ def parse_equity(file_path):
                     if not row:
                         continue
 
-                    row = (row + [None]*12)[:12]   # safe padding
+                    row = (row + [None]*12)[:12]
                     row = [clean_text(r) for r in row]
 
                     if row[0] and "Industry" in str(row[0]):
