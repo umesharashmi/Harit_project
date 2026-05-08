@@ -1,80 +1,74 @@
-import pdfplumber
+import threading
+from app.database import SessionLocal
+from app.models import EquityMovement
+from services.cse_scraper import download_all
+from services.cse_parser import parse_equity
 
-def clean_text(x):
-    if x is None:
-        return None
-    return " ".join(str(x).split())
+def process_cse():
 
-def clean_float(x):
+    db = SessionLocal()
+
     try:
-        if x is None or x == "":
-            return None
-        return float(str(x).replace(",", "").replace("%", "").strip())
-    except:
-        return None
+        print("🔥 START CSE PROCESS")
 
-def clean_int(x):
-    try:
-        if x is None or x == "":
-            return None
-        return int(str(x).replace(",", "").strip())
-    except:
-        return None
+        files = download_all()
 
+        if not files:
+            print("❌ No PDFs found")
+            return
 
-def parse_equity(file_path):
+        # ✅ CLEAR OLD DATA (KEEP THIS)
+        print("🧹 Clearing old data...")
+        db.query(EquityMovement).delete()
+        db.commit()
 
-    rows = []
-    inside_section = False
+        counter = 0
 
-    with pdfplumber.open(file_path) as pdf:
+        for item in files:
 
-        for page_no, page in enumerate(pdf.pages):
+            file_path = item["file"]
+            print("📊 PROCESSING:", file_path)
 
-            text = page.extract_text() or ""
+            rows = parse_equity(file_path)
 
-            if "02. Daily Movements on Equity" in text:
-                inside_section = True
+            if not rows:
+                print("⚠️ No rows parsed")
+                return   # ❗ stop here (empty DB avoid)
 
-            if inside_section and "03." in text:
-                break
+            for r in rows:
+                try:
+                    obj = EquityMovement(
+                        report_date=item["name"],
+                        industry_group=r.get("industry_group"),
+                        board=r.get("board"),
+                        company_name=r.get("company_name"),
+                        type=r.get("type"),
+                        close_price=r.get("close_price"),
+                        last_traded_price=r.get("last_traded_price"),
+                        last_traded_date=r.get("last_traded_date"),
+                        high=r.get("high"),
+                        low=r.get("low"),
+                        foreign_holding=r.get("foreign_holding"),
+                        turnover=r.get("turnover"),
+                        quantity=r.get("quantity"),
+                    )
 
-            if not inside_section:
-                continue
+                    db.add(obj)
+                    counter += 1
 
-            tables = page.extract_tables() or []
+                    # ✅ small batch commit (less memory)
+                    if counter % 100 == 0:
+                        db.commit()
+                        print(f"💾 committed {counter}")
 
-            for table in tables:
-                for row in table:
+                except Exception as e:
+                    print("❌ INSERT ERROR:", e)
 
-                    if not row:
-                        continue
+        db.commit()
+        print("✅ DONE. TOTAL INSERTED:", counter)
 
-                    row = (row + [None]*12)[:12]   # safe padding
-                    row = [clean_text(r) for r in row]
+    except Exception as e:
+        print("💥 PROCESS CRASH:", e)
 
-                    if row[0] and "Industry" in str(row[0]):
-                        continue
-
-                    try:
-                        data = {
-                            "industry_group": row[0],
-                            "board": row[1],
-                            "company_name": row[2],
-                            "type": row[3],
-                            "close_price": clean_float(row[4]),
-                            "last_traded_price": clean_float(row[5]),
-                            "last_traded_date": row[6],
-                            "high": clean_float(row[7]),
-                            "low": clean_float(row[8]),
-                            "foreign_holding": clean_int(row[9]),
-                            "turnover": clean_float(row[10]),
-                            "quantity": clean_int(row[11]),
-                        }
-
-                        rows.append(data)
-
-                    except Exception as e:
-                        print("ROW ERROR:", e)
-
-    return rows
+    finally:
+        db.close()
