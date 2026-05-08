@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import asyncio
+import threading
 
 from app.database import Base, engine
 from app.routes import router as main_router
@@ -18,12 +18,6 @@ app = FastAPI(title="Harit API")
 @app.get("/")
 def root():
     return {"message": "Harit API is running 🚀"}
-
-@app.get("/run-cse")
-def run_cse():
-    import threading
-    threading.Thread(target=process_cse, daemon=True).start()
-    return {"status": "started"}
 
 # ---------------- CORS ----------------
 app.add_middleware(
@@ -49,7 +43,7 @@ app.include_router(auth_router)
 STARTED = False  # 🔥 guard flag
 
 @app.on_event("startup")
-async def startup_event():
+def startup_event():
     global STARTED
 
     print("🚀 HARIT API STARTING...")
@@ -65,17 +59,17 @@ async def startup_event():
     start_scheduler()
 
     # Run heavy tasks in background thread
-    async def run_tasks():
+    def run_tasks():
         try:
             print("⏳ Processing data...")
 
-            process_all()
-            process_country()
-            #await asyncio.to_thread(process_cse)  # 🔥 FIX (no crash)
+            #process_all()
+            #process_country()
+            process_cse()
 
             print("✅ STARTUP TASKS DONE")
 
         except Exception as e:
             print("❌ STARTUP ERROR:", e)
 
-    asyncio.create_task(run_tasks())
+    threading.Thread(target=run_tasks, daemon=True).start()
