@@ -1,65 +1,82 @@
+import threading
 from app.database import SessionLocal
 from app.models import CorporateDebtMovement
 from services.cse_scraper import download_all
 from services.cse_parser import parse_corporate_debt
 
+# 🔒 prevent multiple runs
+_lock = threading.Lock()
+_running = False
+
 
 def process_cse():
 
-    db = SessionLocal()
+    global _running
 
-    print("🔥 START CSE PROCESS")
-
-    files = download_all()
-
-    if not files:
-        print("❌ No PDFs found")
+    if _running:
+        print("⚠️ CSE already running - skipping duplicate call")
         return
 
-    db.query(CorporateDebtMovement).delete()
-    db.commit()
+    with _lock:
+        _running = True
 
-    counter = 0
+        db = SessionLocal()
 
-    for item in files:
+        try:
+            print("🔥 START CSE PROCESS")
 
-        file_path = item["file"]
+            files = download_all()
 
-        print("📊 PROCESSING:", file_path)
+            if not files:
+                print("❌ No PDFs found")
+                return
 
-        rows = parse_corporate_debt(file_path)
+            # clear old data
+            db.query(CorporateDebtMovement).delete()
+            db.commit()
 
-        for r in rows:
+            counter = 0
 
-            try:
+            for item in files:
 
-                obj = CorporateDebtMovement(
+                file_path = item["file"]
+                print("📊 PROCESSING:", file_path)
 
-                    report_date=item["name"],
+                rows = parse_corporate_debt(file_path)
 
-                    industry_group=r["industry_group"],
-                    company_name=r["company_name"],
-                    code_id=r["code_id"],
-                    debt_date=r["debt_date"],
-                    coupon_rate=r["coupon_rate"],
-                    tom=r["tom"],
-                    spot=r["spot"],
-                    issued_date=r["issued_date"],
-                    maturity_date=r["maturity_date"],
-                    coupon_freq=r["coupon_freq"],
-                    next_interest_due_date=r["next_interest_due_date"],
-                    quantity=r["quantity"],
-                    par=r["par"]
+                for r in rows:
 
-                )
+                    try:
+                        obj = CorporateDebtMovement(
+                            report_date=item["name"],
+                            industry_group=r.get("industry_group"),
+                            company_name=r.get("company_name"),
+                            code_id=r.get("code_id"),
+                            debt_date=r.get("debt_date"),
+                            coupon_rate=r.get("coupon_rate"),
+                            tom=r.get("tom"),
+                            spot=r.get("spot"),
+                            issued_date=r.get("issued_date"),
+                            maturity_date=r.get("maturity_date"),
+                            coupon_freq=r.get("coupon_freq"),
+                            next_interest_due_date=r.get("next_interest_due_date"),
+                            quantity=r.get("quantity"),
+                            par=r.get("par")
+                        )
 
-                db.add(obj)
-                counter += 1
+                        db.add(obj)
+                        counter += 1
 
-            except Exception as e:
-                print("❌ INSERT ERROR:", e)
+                    except Exception as e:
+                        print("❌ INSERT ERROR:", e)
 
-    db.commit()
-    db.close()
+            db.commit()
 
-    print("✅ DONE. TOTAL INSERTED:", counter)
+            print("✅ DONE. TOTAL INSERTED:", counter)
+
+        except Exception as e:
+            print("💥 PROCESS CRASH:", e)
+
+        finally:
+            db.close()
+            _running = False
