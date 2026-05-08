@@ -1,7 +1,5 @@
 from playwright.sync_api import sync_playwright
-import requests
 import os
-from urllib.parse import urljoin
 
 URL = "https://www.cse.lk/publications/cse-daily"
 BASE_URL = "https://www.cse.lk"
@@ -34,73 +32,86 @@ def get_latest_pdf():
 
         with sync_playwright() as p:
 
-            browser = p.chromium.launch(headless=True)
-
-            page = browser.new_page()
-
-            page.goto(URL, timeout=60000)
-
-            # wait page render
-            page.wait_for_timeout(5000)
-
-            print("🔍 Searching download links...")
-
-            links = page.locator("a").evaluate_all(
-                """
-                elements => elements.map(el => el.href)
-                """
+            browser = p.chromium.launch(
+                headless=True
             )
+
+            context = browser.new_context(
+                accept_downloads=True
+            )
+
+            page = context.new_page()
+
+            page.goto(
+                URL,
+                timeout=60000
+            )
+
+            # wait fully loaded
+            page.wait_for_timeout(8000)
+
+            print("🔍 Searching download button...")
+
+            # all buttons / links
+            buttons = page.locator("a, button")
+
+            count = buttons.count()
+
+            print(f"TOTAL BUTTONS/LINKS: {count}")
+
+            download_button = None
+
+            for i in range(count):
+
+                try:
+
+                    text = buttons.nth(i).inner_text().strip()
+
+                    print(f"{i} -> {text}")
+
+                    if "download" in text.lower():
+
+                        download_button = buttons.nth(i)
+                        break
+
+                except:
+                    pass
+
+            if not download_button:
+
+                print("❌ Download button not found")
+
+                browser.close()
+
+                return None
+
+            print("⬇️ Clicking download button...")
+
+            with page.expect_download() as download_info:
+
+                download_button.click()
+
+            download = download_info.value
+
+            filename = download.suggested_filename
+
+            filepath = os.path.join(
+                DIR,
+                filename
+            )
+
+            download.save_as(filepath)
 
             browser.close()
 
-        pdf_url = None
+            print("✅ DOWNLOADED:", filename)
 
-        for link in links:
-
-            if ".pdf" in link.lower():
-
-                pdf_url = link
-                break
-
-        if not pdf_url:
-
-            print("❌ PDF URL not found")
-            return None
-
-        pdf_url = urljoin(BASE_URL, pdf_url)
-
-        print("📄 PDF URL:")
-        print(pdf_url)
-
-        headers = {
-            "User-Agent": "Mozilla/5.0"
-        }
-
-        print("⬇️ Downloading PDF...")
-
-        response = requests.get(
-            pdf_url,
-            headers=headers,
-            timeout=60
-        )
-
-        response.raise_for_status()
-
-        filename = pdf_url.split("/")[-1]
-        filename = filename.split("?")[0]
-
-        filepath = os.path.join(DIR, filename)
-
-        with open(filepath, "wb") as f:
-            f.write(response.content)
-
-        print("✅ DOWNLOADED:", filename)
-
-        return filepath
+            return filepath
 
     except Exception as e:
 
         print("❌ ERROR:", str(e))
+
         return None
 
 
@@ -113,11 +124,14 @@ def download_pdf():
     if not file_path:
 
         print("❌ PDF NOT FOUND")
+
         return None
 
     return {
+
         "file": file_path,
         "name": os.path.basename(file_path)
+
     }
 
 
