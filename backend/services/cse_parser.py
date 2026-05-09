@@ -14,8 +14,7 @@ def clean_int(x):
     try:
         if x is None or x == "":
             return None
-        return None
-        return int(str(x).replace(",", "").strip())
+        return int(str(x).replace(",", "").strip())   # ✅ FIXED
     except:
         return None
 
@@ -72,15 +71,15 @@ def parse_equity(file_path):
                     # remove empty cells
                     row = [r for r in row if r not in (None, "")]
 
-                    # ❌ skip short/broken rows
+                    # skip short rows
                     if len(row) < 10:
                         continue
 
-                    # ❌ skip headers
+                    # skip headers
                     if "Industry" in str(row[0]):
                         continue
 
-                    # ❌ ensure numeric columns are valid
+                    # ensure numeric columns
                     if not is_number(row[-1]) or not is_number(row[-2]):
                         continue
 
