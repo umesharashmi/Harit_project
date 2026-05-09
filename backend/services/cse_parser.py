@@ -16,6 +16,7 @@ def clean_int(x):
     except:
         return None
 
+
 def parse_equity(file_path):
 
     rows = []
@@ -36,7 +37,7 @@ def parse_equity(file_path):
                 inside_section = True
                 print(f"✅ ENTER SECTION (page {page_no+1})")
 
-            # ✅ STOP (FIXED)
+            # ✅ STOP
             if inside_section and "03." in text and "Debt" in text:
                 print(f"⛔ EXIT SECTION (page {page_no+1})")
                 break
@@ -57,12 +58,24 @@ def parse_equity(file_path):
                     if not row:
                         continue
 
+                    # ✅ normalize row length
                     row = (row + [None] * 20)[:20]
-                    row = [r.strip() if isinstance(r, str) else r for r in row]
 
+                    # ✅ clean strings (remove \n etc.)
+                    row = [
+                        r.replace("\n", " ").strip() if isinstance(r, str) else r
+                        for r in row
+                    ]
+
+                    # ❌ skip header row
                     if row[0] and "Industry" in str(row[0]):
                         continue
 
+                    # ❌ skip section title row
+                    if row[0] and "Daily Movements" in str(row[0]):
+                        continue
+
+                    # ❌ skip fully empty rows
                     if all(r is None or r == "" for r in row):
                         continue
 
