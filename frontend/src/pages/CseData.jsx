@@ -44,13 +44,21 @@ export default function CseData() {
       .then((res) => setFilters(res.data))
       .catch((err) => console.log(err));
 
-    loadChart();
+    loadChart({});
   }, []);
 
   // LOAD CHART DATA
   const loadChart = (params = {}) => {
     axios
-      .get(`${BASE_URL}/equity/change-over-period`, { params })
+      .get(`${BASE_URL}/equity/change-over-period`, {
+        params: {
+          company: params.company || undefined,
+          industry: params.industry || undefined,
+          board: params.board || undefined,
+          start_date: params.start_date || undefined,
+          end_date: params.end_date || undefined,
+        },
+      })
       .then((res) => {
         setChartData({
           labels: res.data.labels,
@@ -90,7 +98,6 @@ export default function CseData() {
 
       <h2 className="cse-title">📊 CSE Data Dashboard</h2>
 
-      {/* FILTER SECTION */}
       <div className="cse-filters">
 
         {/* Company */}
@@ -135,28 +142,39 @@ export default function CseData() {
           ))}
         </select>
 
-        {/* START DATE */}
-        <input
-          type="date"
+        {/* BEFORE DATE */}
+        <select
           onChange={(e) =>
             setSelected({ ...selected, start_date: e.target.value })
           }
-        />
+        >
+          <option value="">Before Date</option>
+          {filters.dates?.map((d, i) => (
+            <option key={i} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
 
-        {/* END DATE */}
-        <input
-          type="date"
+        {/* AFTER DATE */}
+        <select
           onChange={(e) =>
             setSelected({ ...selected, end_date: e.target.value })
           }
-        />
+        >
+          <option value="">After Date</option>
+          {filters.dates?.map((d, i) => (
+            <option key={i} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
 
         <button className="cse-btn" onClick={handleFilter}>
           Apply Filters
         </button>
       </div>
 
-      {/* CHART */}
       <div className="cse-chart">
         {chartData ? (
           <Line data={chartData} />

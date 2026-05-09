@@ -416,3 +416,17 @@ def equity_change_over_period(
         "turnover": [float(d[2] or 0) for d in data],
         "quantity": [int(d[3] or 0) for d in data],
     }
+
+@router.get("/equity/filters")
+def equity_filters(db: Session = Depends(get_db)):
+
+    dates = db.query(EquityMovement.report_date).distinct().all()
+
+    clean_dates = sorted([d[0] for d in dates])
+
+    return {
+        "companies": [c[0] for c in db.query(EquityMovement.company_name).distinct().all()],
+        "industries": [i[0] for i in db.query(EquityMovement.industry_group).distinct().all()],
+        "boards": [b[0] for b in db.query(EquityMovement.board).distinct().all()],
+        "dates": clean_dates
+    }
