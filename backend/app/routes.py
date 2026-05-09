@@ -316,24 +316,6 @@ def get_db():
         db.close()
 
 
-@router.get("/equity/filters")
-def equity_filters(db: Session = Depends(get_db)):
-
-    return {
-        "companies": [
-            c[0] for c in db.query(EquityMovement.company_name).distinct().all()
-        ],
-        "industries": [
-            i[0] for i in db.query(EquityMovement.industry_group).distinct().all()
-        ],
-        "boards": [
-            b[0] for b in db.query(EquityMovement.board).distinct().all()
-        ],
-        "dates": [
-            d[0] for d in db.query(EquityMovement.report_date).distinct().all()
-        ],
-    }
-
 
 
 @router.get("/equity/chart")
