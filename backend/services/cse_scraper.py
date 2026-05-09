@@ -19,64 +19,61 @@ def clean_old_pdfs():
     print("🧹 Old PDFs removed")
 
 
-def get_latest_pdf():
+def get_latest_3_pdfs():
 
     os.makedirs(DIR, exist_ok=True)
+
+    files = []
 
     with sync_playwright() as p:
 
         browser = p.chromium.launch(headless=True)
-        context = browser.new_context(accept_downloads=True)
-        page = context.new_page()
+        page = browser.new_page()
 
-        print("🌐 Opening browser...")
+        print("🌐 Opening page...")
 
         page.goto(URL, timeout=60000)
         page.wait_for_load_state("networkidle")
 
-        print("🔍 Searching download button...")
+        # 🔥 GET ALL DOWNLOAD BUTTONS
+        buttons = page.locator("button:has-text('Download'), a:has-text('Download')")
+        count = buttons.count()
 
-        # 🔥 FIX ONLY: more stable locator (NO logic change)
-        download_button = page.locator("button:has-text('Download'), a:has-text('Download')").first
+        print("🔎 TOTAL DOWNLOADS FOUND:", count)
 
-        if download_button.count() == 0:
-            print("❌ Download button not found")
-            return None
+        for i in range(min(3, count)):
 
-        print("⬇️ Clicking download...")
+            with page.expect_download() as download_info:
+                buttons.nth(i).click()
 
-        with page.expect_download() as download_info:
-            download_button.click(force=True)
+            download = download_info.value
 
-        download = download_info.value
+            filepath = os.path.join(DIR, download.suggested_filename)
+            download.save_as(filepath)
 
-        filepath = os.path.join(DIR, download.suggested_filename)
-        download.save_as(filepath)
+            print(f"⬇️ DOWNLOADED {i+1}:", filepath)
+
+            files.append(filepath)
 
         browser.close()
 
-        print("✅ DOWNLOADED:", filepath)
-
-        return filepath
+    return files
 
 
 def download_all():
 
     clean_old_pdfs()
 
-    files = get_latest_pdfs(3)   # 🔥 ONLY CHANGE
-
-    if not files:
-        return []
+    file_paths = get_latest_3_pdfs()
 
     results = []
 
-    for i, file_path in enumerate(files):
+    for i, path in enumerate(file_paths):
 
         clean_name = f"cse_{time.strftime('%Y%m%d')}_{i}.pdf"
         new_path = os.path.join(DIR, clean_name)
 
-        os.rename(file_path, new_path)
+        os.rename(path, new_path)
 
         results.append({
             "file": new_path,
