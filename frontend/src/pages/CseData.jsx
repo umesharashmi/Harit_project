@@ -61,23 +61,23 @@ export default function CseData() {
       })
       .then((res) => {
         setChartData({
-          labels: res.data.labels,
+          labels: res.data.labels || [],
           datasets: [
             {
               label: "Avg Close Price",
-              data: res.data.avg_price,
+              data: res.data.avg_price || [],
               borderColor: "blue",
               tension: 0.3,
             },
             {
               label: "Turnover",
-              data: res.data.turnover,
+              data: res.data.turnover || [],
               borderColor: "green",
               tension: 0.3,
             },
             {
               label: "Quantity",
-              data: res.data.quantity,
+              data: res.data.quantity || [],
               borderColor: "red",
               tension: 0.3,
             },

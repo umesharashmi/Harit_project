@@ -351,7 +351,6 @@ def equity_chart(
         func.sum(EquityMovement.quantity)
     )
 
-    #  FILTERS
     if company:
         query = query.filter(EquityMovement.company_name == company)
 
@@ -361,7 +360,8 @@ def equity_chart(
     if board:
         query = query.filter(EquityMovement.board == board)
 
-    data = query.group_by(EquityMovement.last_tarded_date).all()
+    # ✅ FIXED TYPO HERE
+    data = query.group_by(EquityMovement.last_traded_date).all()
 
     return {
         "labels": [d[0] for d in data],
@@ -389,7 +389,6 @@ def equity_change_over_period(
         func.sum(EquityMovement.quantity).label("quantity")
     )
 
-    # 🔥 FILTERS
     if company:
         query = query.filter(EquityMovement.company_name == company)
 
@@ -399,7 +398,6 @@ def equity_change_over_period(
     if board:
         query = query.filter(EquityMovement.board == board)
 
-    # 🔥 DATE RANGE FILTER (IMPORTANT PART)
     if start_date and end_date:
         query = query.filter(
             and_(
@@ -408,7 +406,10 @@ def equity_change_over_period(
             )
         )
 
-    data = query.group_by(EquityMovement.last_traded_date_date).order_by(EquityMovement.last_traded_date_date).all()
+    # ✅ FIXED HERE (was wrong column before)
+    data = query.group_by(EquityMovement.report_date)\
+                .order_by(EquityMovement.report_date)\
+                .all()
 
     return {
         "labels": [d[0] for d in data],
