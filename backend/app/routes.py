@@ -345,7 +345,7 @@ def equity_chart(
 ):
 
     query = db.query(
-        EquityMovement.report_date,
+        EquityMovement.last_traded_date,
         func.avg(EquityMovement.close_price),
         func.sum(EquityMovement.turnover),
         func.sum(EquityMovement.quantity)
@@ -361,7 +361,7 @@ def equity_chart(
     if board:
         query = query.filter(EquityMovement.board == board)
 
-    data = query.group_by(EquityMovement.report_date).all()
+    data = query.group_by(EquityMovement.last_tarded_date).all()
 
     return {
         "labels": [d[0] for d in data],
@@ -408,7 +408,7 @@ def equity_change_over_period(
             )
         )
 
-    data = query.group_by(EquityMovement.report_date).order_by(EquityMovement.report_date).all()
+    data = query.group_by(EquityMovement.last_traded_date_date).order_by(EquityMovement.last_traded_date_date).all()
 
     return {
         "labels": [d[0] for d in data],
@@ -420,7 +420,7 @@ def equity_change_over_period(
 @router.get("/equity/filters")
 def equity_filters(db: Session = Depends(get_db)):
 
-    dates = db.query(EquityMovement.report_date).distinct().all()
+    dates = db.query(EquityMovement.last_traded_date).distinct().all()
 
     clean_dates = sorted([d[0] for d in dates])
 
