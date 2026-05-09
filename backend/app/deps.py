@@ -19,7 +19,7 @@ def get_db():
     finally:
         db.close()
 
-# 👤 Get current logged user
+#  Get current logged user
 def get_current_user(credentials = Depends(security), db: Session = Depends(get_db)):
 
     token = credentials.credentials   # 🔥 Bearer token eka extract karanawa

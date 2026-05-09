@@ -56,7 +56,7 @@ def process_cse():
                     db.add(obj)
                     counter += 1
 
-                    # ✅ small batch commit (less memory)
+                    # small batch commit (less memory)
                     if counter % 100 == 0:
                         db.commit()
                         print(f"💾 committed {counter}")

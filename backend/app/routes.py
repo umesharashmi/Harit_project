@@ -243,7 +243,7 @@ def search_country(year: int = None, country: str = None, month: str = None):
     try:
         query = db.query(CountryArrival)
 
-        # ✅ FIX: year optional
+        # FIX: year optional
         if year is not None:
             query = query.filter(CountryArrival.year == year)
 
@@ -351,7 +351,7 @@ def equity_chart(
         func.sum(EquityMovement.quantity)
     )
 
-    # 🔥 FILTERS
+    #  FILTERS
     if company:
         query = query.filter(EquityMovement.company_name == company)
 
@@ -362,6 +362,53 @@ def equity_chart(
         query = query.filter(EquityMovement.board == board)
 
     data = query.group_by(EquityMovement.report_date).all()
+
+    return {
+        "labels": [d[0] for d in data],
+        "avg_price": [float(d[1] or 0) for d in data],
+        "turnover": [float(d[2] or 0) for d in data],
+        "quantity": [int(d[3] or 0) for d in data],
+    }
+
+from sqlalchemy import and_
+
+@router.get("/equity/change-over-period")
+def equity_change_over_period(
+    company: str = None,
+    industry: str = None,
+    board: str = None,
+    start_date: str = None,
+    end_date: str = None,
+    db: Session = Depends(get_db)
+):
+
+    query = db.query(
+        EquityMovement.report_date,
+        func.avg(EquityMovement.close_price).label("avg_price"),
+        func.sum(EquityMovement.turnover).label("turnover"),
+        func.sum(EquityMovement.quantity).label("quantity")
+    )
+
+    # 🔥 FILTERS
+    if company:
+        query = query.filter(EquityMovement.company_name == company)
+
+    if industry:
+        query = query.filter(EquityMovement.industry_group == industry)
+
+    if board:
+        query = query.filter(EquityMovement.board == board)
+
+    # 🔥 DATE RANGE FILTER (IMPORTANT PART)
+    if start_date and end_date:
+        query = query.filter(
+            and_(
+                EquityMovement.report_date >= start_date,
+                EquityMovement.report_date <= end_date
+            )
+        )
+
+    data = query.group_by(EquityMovement.report_date).order_by(EquityMovement.report_date).all()
 
     return {
         "labels": [d[0] for d in data],

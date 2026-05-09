@@ -7,9 +7,9 @@ from app.deps import get_db
 
 router = APIRouter()
 
-# ======================
+
 # REGISTER
-# ======================
+
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register(user: UserCreate, db: Session = Depends(get_db)):
 
