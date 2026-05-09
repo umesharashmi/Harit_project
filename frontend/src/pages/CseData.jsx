@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Line } from "react-chartjs-2";
 import Navbar from "../component/Navbar";
+import "..styles/cse.css";
+
 import {
   Chart as ChartJS,
   LineElement,
@@ -66,12 +68,13 @@ export default function CseData() {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-        <Navbar />
-      <h2>📊 CSE Data Dashboard</h2>
+    <div className="cse-container">
+      <Navbar />
+
+      <h2 className="cse-title">📊 CSE Data Dashboard</h2>
 
       {/* FILTER SECTION */}
-      <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+      <div className="cse-filters">
 
         {/* Company */}
         <select
@@ -103,17 +106,17 @@ export default function CseData() {
           ))}
         </select>
 
-        <button onClick={handleFilter}>
+        <button className="cse-btn" onClick={handleFilter}>
           Apply Filters
         </button>
       </div>
 
       {/* CHART */}
-      <div style={{ width: "100%", height: "420px" }}>
+      <div className="cse-chart">
         {chartData ? (
           <Line data={chartData} />
         ) : (
-          <p>Loading chart...</p>
+          <p className="loading-text">Loading chart...</p>
         )}
       </div>
     </div>
