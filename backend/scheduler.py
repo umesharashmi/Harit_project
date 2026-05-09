@@ -17,8 +17,8 @@ def weekly_job():
 
 
 def start_scheduler():
-    # every 3 days run (168 hours)
-    scheduler.add_job(weekly_job, "interval", days=3)
+    # every 1 days run (24 hours)
+    scheduler.add_job(weekly_job, "interval", days=1)
 
     scheduler.start()
     print("🟢 Scheduler Started (Runs every 3 days)")
