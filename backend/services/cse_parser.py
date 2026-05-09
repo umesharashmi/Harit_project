@@ -14,7 +14,7 @@ def clean_int(x):
     try:
         if x is None or x == "":
             return None
-        return int(str(x).replace(",", "").strip())   # ✅ FIXED
+        return int(str(x).replace(",", "").strip())
     except:
         return None
 
@@ -62,24 +62,19 @@ def parse_equity(file_path):
                     if not row:
                         continue
 
-                    # clean row
                     row = [
                         r.replace("\n", " ").strip() if isinstance(r, str) else r
                         for r in row
                     ]
 
-                    # remove empty cells
                     row = [r for r in row if r not in (None, "")]
 
-                    # skip short rows
                     if len(row) < 10:
                         continue
 
-                    # skip headers
                     if "Industry" in str(row[0]):
                         continue
 
-                    # ensure numeric columns
                     if not is_number(row[-1]) or not is_number(row[-2]):
                         continue
 
@@ -102,7 +97,7 @@ def parse_equity(file_path):
                         rows.append(data)
 
                     except Exception as e:
-                        print(f"❌ ROW ERROR (page {page_no+1}):", e)
+                        print(f"❌ ROW ERROR:", e)
 
     print("✅ TOTAL PARSED ROWS:", len(rows))
     return rows

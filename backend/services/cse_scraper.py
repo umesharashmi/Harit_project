@@ -36,7 +36,8 @@ def get_latest_pdf():
 
         print("🔍 Searching download button...")
 
-        download_button = page.locator("text=Download").first
+        # 🔥 FIX ONLY: more stable locator (NO logic change)
+        download_button = page.locator("button:has-text('Download'), a:has-text('Download')").first
 
         if download_button.count() == 0:
             print("❌ Download button not found")
@@ -67,7 +68,6 @@ def download_all():
     if not file_path:
         return []
 
-    # clean name
     clean_name = f"cse_{time.strftime('%Y%m%d')}.pdf"
 
     new_path = os.path.join(DIR, clean_name)
