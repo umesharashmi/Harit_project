@@ -61,17 +61,26 @@ def get_latest_pdf():
 
 
 def download_all():
+
     clean_old_pdfs()
 
-    file_path = get_latest_pdf()
+    files = get_latest_pdfs(3)   # 🔥 ONLY CHANGE
 
-    if not file_path:
+    if not files:
         return []
 
-    clean_name = f"cse_{time.strftime('%Y%m%d')}.pdf"
+    results = []
 
-    new_path = os.path.join(DIR, clean_name)
+    for i, file_path in enumerate(files):
 
-    os.rename(file_path, new_path)
+        clean_name = f"cse_{time.strftime('%Y%m%d')}_{i}.pdf"
+        new_path = os.path.join(DIR, clean_name)
 
-    return [{"file": new_path, "name": clean_name}]
+        os.rename(file_path, new_path)
+
+        results.append({
+            "file": new_path,
+            "name": clean_name
+        })
+
+    return results
