@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import func
 from .database import SessionLocal
-from .models import Price,User,CountryArrival
+from .models import Price,User,CountryArrival,EquityMovement
 from services.parser import parse_pdf
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -306,3 +306,66 @@ def total_by_year_calc():
 
     finally:
         db.close()
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+@router.get("/equity/filters")
+def equity_filters(db: Session = Depends(get_db)):
+
+    return {
+        "companies": [
+            c[0] for c in db.query(EquityMovement.company_name).distinct().all()
+        ],
+        "industries": [
+            i[0] for i in db.query(EquityMovement.industry_group).distinct().all()
+        ],
+        "boards": [
+            b[0] for b in db.query(EquityMovement.board).distinct().all()
+        ],
+        "dates": [
+            d[0] for d in db.query(EquityMovement.report_date).distinct().all()
+        ],
+    }
+
+
+
+@router.get("/equity/chart")
+def equity_chart(
+    company: str = None,
+    industry: str = None,
+    board: str = None,
+    db: Session = Depends(get_db)
+):
+
+    query = db.query(
+        EquityMovement.report_date,
+        func.avg(EquityMovement.close_price),
+        func.sum(EquityMovement.turnover),
+        func.sum(EquityMovement.quantity)
+    )
+
+    # 🔥 FILTERS
+    if company:
+        query = query.filter(EquityMovement.company_name == company)
+
+    if industry:
+        query = query.filter(EquityMovement.industry_group == industry)
+
+    if board:
+        query = query.filter(EquityMovement.board == board)
+
+    data = query.group_by(EquityMovement.report_date).all()
+
+    return {
+        "labels": [d[0] for d in data],
+        "avg_price": [float(d[1] or 0) for d in data],
+        "turnover": [float(d[2] or 0) for d in data],
+        "quantity": [int(d[3] or 0) for d in data],
+    }

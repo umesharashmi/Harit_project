@@ -9,6 +9,7 @@ import Vegetable from "./pages/Vegetable";
 
 import AdminDashboard from "./pages/AdminDashboard";
 import ViewDashboard from "./pages/ViewDashboard";
+import CseData from "./pages/CseData";
 
 /* =========================
    AUTH CHECK HELPER
@@ -115,6 +116,15 @@ function App() {
             </PrivateRoute>
           }
         />
+
+        <Route
+  path="/cse-data"
+  element={
+    <PrivateRoute>
+      <CseData />
+    </PrivateRoute>
+  }
+/>
 
         {/* ROLE BASED ROUTES */}
         <Route

@@ -43,7 +43,7 @@ export default function Navbar() {
 
         <Link
           to="/cse"
-           className={`nav-link ${isActive("/cse") ? "active" : ""}`}
+           className={`nav-link ${isActive("/cse-data") ? "active" : ""}`}
             >
             📈 CSE Data
               </Link>
