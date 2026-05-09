@@ -1,8 +1,8 @@
+import threading
 from app.database import SessionLocal
 from app.models import EquityMovement
 from services.cse_scraper import download_all
 from services.cse_parser import parse_equity
-
 
 def process_cse():
 
@@ -17,6 +17,7 @@ def process_cse():
             print("❌ No PDFs found")
             return
 
+        # ✅ CLEAR OLD DATA (KEEP THIS)
         print("🧹 Clearing old data...")
         db.query(EquityMovement).delete()
         db.commit()
@@ -31,8 +32,8 @@ def process_cse():
             rows = parse_equity(file_path)
 
             if not rows:
-                print("⚠️ No rows parsed:", file_path)
-                continue   # ✅ FIX: don't stop whole process
+                print("⚠️ No rows parsed")
+                return   # ❗ stop here (empty DB avoid)
 
             for r in rows:
                 try:
@@ -55,6 +56,7 @@ def process_cse():
                     db.add(obj)
                     counter += 1
 
+                    # small batch commit (less memory)
                     if counter % 100 == 0:
                         db.commit()
                         print(f"💾 committed {counter}")

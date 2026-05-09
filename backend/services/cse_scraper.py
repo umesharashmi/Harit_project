@@ -19,65 +19,59 @@ def clean_old_pdfs():
     print("🧹 Old PDFs removed")
 
 
-def get_latest_pdfs(limit=3):
+def get_latest_pdf():
 
     os.makedirs(DIR, exist_ok=True)
-
-    files = []
 
     with sync_playwright() as p:
 
         browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
+        context = browser.new_context(accept_downloads=True)
+        page = context.new_page()
 
-        print("🌐 Opening page...")
+        print("🌐 Opening browser...")
 
         page.goto(URL, timeout=60000)
         page.wait_for_load_state("networkidle")
 
-        # 👉 collect all PDF links
-        links = page.locator("a[href*='.pdf']")
-        count = links.count()
+        print("🔍 Searching download button...")
 
-        print("🔎 PDF LINKS FOUND:", count)
+        download_button = page.locator("text=Download").first
 
-        for i in range(min(limit, count)):
+        if download_button.count() == 0:
+            print("❌ Download button not found")
+            return None
 
-            with page.expect_download() as download_info:
-                links.nth(i).click()
+        print("⬇️ Clicking download...")
 
-            download = download_info.value
+        with page.expect_download() as download_info:
+            download_button.click(force=True)
 
-            filepath = os.path.join(DIR, download.suggested_filename)
-            download.save_as(filepath)
+        download = download_info.value
 
-            print("⬇️ Downloaded:", filepath)
-
-            files.append(filepath)
+        filepath = os.path.join(DIR, download.suggested_filename)
+        download.save_as(filepath)
 
         browser.close()
 
-    return files
+        print("✅ DOWNLOADED:", filepath)
+
+        return filepath
 
 
 def download_all():
-
     clean_old_pdfs()
 
-    file_paths = get_latest_pdfs(3)
+    file_path = get_latest_pdf()
 
-    results = []
+    if not file_path:
+        return []
 
-    for path in file_paths:
+    # clean name
+    clean_name = f"cse_{time.strftime('%Y%m%d')}.pdf"
 
-        clean_name = f"cse_{time.strftime('%Y%m%d_%H%M%S')}.pdf"
-        new_path = os.path.join(DIR, clean_name)
+    new_path = os.path.join(DIR, clean_name)
 
-        os.rename(path, new_path)
+    os.rename(file_path, new_path)
 
-        results.append({
-            "file": new_path,
-            "name": clean_name
-        })
-
-    return results
+    return [{"file": new_path, "name": clean_name}]
