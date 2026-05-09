@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Line } from "react-chartjs-2";
+import Navbar from "../component/Navbar";
 import {
   Chart as ChartJS,
   LineElement,
@@ -66,6 +67,7 @@ export default function CseData() {
 
   return (
     <div style={{ padding: "20px" }}>
+        <Navbar />
       <h2>📊 CSE Data Dashboard</h2>
 
       {/* FILTER SECTION */}
