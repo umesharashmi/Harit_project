@@ -1,6 +1,7 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from services.processor import process_all
 from services.tourism_processor import process_country
+from services.cse_processor import process_cse
 
 scheduler = BackgroundScheduler()
 
@@ -10,10 +11,11 @@ def weekly_job():
     try:
         process_all()
         process_country()
-        print("✅ WEEKLY JOB COMPLETED")
+        process_cse()
+        print("✅ Daily JOB COMPLETED")
 
     except Exception as e:
-        print("❌ WEEKLY JOB ERROR:", e)
+        print("❌ Daily JOB ERROR:", e)
 
 
 def start_scheduler():
@@ -21,4 +23,4 @@ def start_scheduler():
     scheduler.add_job(weekly_job, "interval", days=1)
 
     scheduler.start()
-    print("🟢 Scheduler Started (Runs every 3 days)")
+    print("🟢 Scheduler Started (Runs every  days)")
